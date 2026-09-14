@@ -4,6 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Venta / Factura DTE.
+ *
+ * condicion_operacion:
+ *   '1' = Contado (paga en el momento)
+ *   '2' = Crédito (genera un CreditoComercial automáticamente)
+ *   '3' = Otro
+ */
 class Venta extends Model
 {
     protected $fillable = [
@@ -52,5 +60,32 @@ class Venta extends Model
     public function eventoInvalidacion()
     {
         return $this->hasOne(EventoInvalidacion::class);
+    }
+
+    /**
+     * Crédito comercial generado a partir de esta venta.
+     * Solo existe cuando condicion_operacion = '2'.
+     */
+    public function credito()
+    {
+        return $this->hasOne(Credito::class);
+    }
+
+    /** Verifica si esta venta ya tiene un crédito asociado */
+    public function getTieneCreditoAttribute(): bool
+    {
+        return $this->credito()->exists();
+    }
+
+    // ─── Scopes ──────────────────────────────────────────────────────────
+
+    public function scopeAlCredito($query)
+    {
+        return $query->where('condicion_operacion', '2');
+    }
+
+    public function scopeSinCredito($query)
+    {
+        return $query->alCredito()->whereDoesntHave('credito');
     }
 }

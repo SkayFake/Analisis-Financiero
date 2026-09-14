@@ -35,12 +35,14 @@ Route::middleware(['auth'])->group(function () {
     // Activo Fijo
     Route::get('/activos-fijos', \App\Livewire\ActivoFijoDashboard::class)->name('activos-fijos.dashboard');
 
-    // Créditos
+    // Créditos Comerciales
     Route::get('/creditos', [\App\Http\Controllers\CreditoController::class, 'index'])->name('creditos.index');
     Route::get('/creditos/create', [\App\Http\Controllers\CreditoController::class, 'create'])->name('creditos.create');
     Route::post('/creditos', [\App\Http\Controllers\CreditoController::class, 'store'])->name('creditos.store');
     Route::get('/creditos/{credito}', [\App\Http\Controllers\CreditoController::class, 'show'])->name('creditos.show');
     Route::post('/creditos/{credito}/pagos', [\App\Http\Controllers\CreditoController::class, 'storePago'])->name('creditos.pagos.store');
+    Route::post('/creditos/{credito}/aprobar', [\App\Http\Controllers\CreditoController::class, 'aprobar'])->name('creditos.aprobar');
+    Route::post('/creditos/{credito}/rechazar', [\App\Http\Controllers\CreditoController::class, 'rechazar'])->name('creditos.rechazar');
 
     // Inventario
     Route::get('/inventario', \App\Livewire\InventarioDashboard::class)->name('inventario.dashboard');
@@ -60,4 +62,8 @@ Route::middleware(['auth'])->group(function () {
     // Cobros
     Route::get('/cobros', [CobroController::class, 'dashboard'])->name('cobros.dashboard');
     Route::post('/cobros/reclasificacion-masiva', [CobroController::class, 'reclasificacionMasiva'])->name('cobros.reclasificacion');
+
+    // Configuraciones Generales
+    Route::get('/configuracion/catalogos', \App\Livewire\Configuracion\CatalogosDashboard::class)->name('configuracion.catalogos');
+    Route::get('/vendedores', \App\Livewire\Vendedores\VendedoresDashboard::class)->name('vendedores.index');
 });

@@ -25,6 +25,14 @@ class PuntoVenta extends Component
     public $tipo_documento = '01'; // 01 FCF, 03 CCF, 11 Ticket, 05 NC, 06 ND
     public $condicion_operacion = '1'; // 1 Contado, 2 Crédito
 
+    // Plan de crédito (solo cuando condicion_operacion = '2')
+    public $condicion_credito_id = '';
+    public $numero_cuotas = 1;
+    public $frecuencia_pago = 'mensual'; // se toma de la condicion_credito, solo referencial
+    public $fecha_primera_cuota = '';
+    public $dui_verificado = false;
+    public $referencia_verificada = false;
+
     // Search
     public $searchProducto = '';
 
@@ -52,6 +60,11 @@ class PuntoVenta extends Component
             }])
             ->take(6)
             ->get();
+    }
+
+    public function getCondicionesCreditorProperty()
+    {
+        return \App\Models\CondicionCredito::activas()->get();
     }
 
     public function getClientesProperty()
@@ -175,10 +188,18 @@ class PuntoVenta extends Component
             $usuarioId = Auth::id() ?? 1;
             
             $datosVenta = [
-                'cliente_id' => $this->cliente_id ?: null,
-                'tipo_documento' => $this->tipo_documento,
+                'cliente_id'          => $this->cliente_id ?: null,
+                'tipo_documento'      => $this->tipo_documento,
                 'condicion_operacion' => $this->condicion_operacion,
-                'bodega_id' => $this->bodega_id ?: 1,
+                'bodega_id'           => $this->bodega_id ?: 1,
+                // Plan de crédito (se pasa al FacturacionService para crear el crédito automáticamente)
+                'condiciones_credito' => $this->condicion_operacion === '2' ? [
+                    'condicion_credito_id'  => $this->condicion_credito_id ?: null,
+                    'numero_cuotas'         => (int) $this->numero_cuotas,
+                    'fecha_primera_cuota'   => $this->fecha_primera_cuota ?: now()->addMonth()->toDateString(),
+                    'dui_verificado'        => $this->dui_verificado,
+                    'referencia_verificada' => $this->referencia_verificada,
+                ] : [],
             ];
 
             $venta = $service->procesarVenta($datosVenta, $this->detalles, $usuarioId);

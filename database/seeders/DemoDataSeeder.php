@@ -5,13 +5,12 @@ namespace Database\Seeders;
 use App\Models\Cartera;
 use App\Models\Cliente;
 use App\Models\ClienteJuridico;
+use App\Models\CondicionCredito;
 use App\Models\Credito;
 use App\Models\PoliticaCobro;
-use App\Models\ProductoCredito;
 use App\Models\Vendedor;
 use App\Models\Zona;
 use App\Models\User;
-use App\Services\CreditoService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -83,55 +82,9 @@ class DemoDataSeeder extends Seeder
             'activa' => true,
         ]);
 
-        // ─── Productos de Crédito ─────────────────────────────
-        $productos = [];
-        $productos[] = ProductoCredito::create([
-            'codigo' => 'PC-001',
-            'nombre' => 'Crédito Personal',
-            'descripcion' => 'Crédito personal para personas naturales',
-            'tipo' => 'personal',
-            'tasa_interes' => 18.0000,
-            'comision' => 2.0000,
-            'monto_minimo' => 200.00,
-            'monto_maximo' => 25000.00,
-            'plazo_min_dias' => 90,
-            'plazo_max_dias' => 1825,
-            'dias_mora_incobrable' => 180,
-            'interes_moratorio' => 12.0000,
-            'requiere_fiador' => false,
-        ]);
-
-        $productos[] = ProductoCredito::create([
-            'codigo' => 'PC-002',
-            'nombre' => 'Crédito Comercial',
-            'descripcion' => 'Crédito para instituciones comerciales',
-            'tipo' => 'comercial',
-            'tasa_interes' => 15.0000,
-            'comision' => 1.5000,
-            'monto_minimo' => 1000.00,
-            'monto_maximo' => 100000.00,
-            'plazo_min_dias' => 180,
-            'plazo_max_dias' => 3650,
-            'dias_mora_incobrable' => 180,
-            'interes_moratorio' => 10.0000,
-            'requiere_fiador' => true,
-        ]);
-
-        $productos[] = ProductoCredito::create([
-            'codigo' => 'PC-003',
-            'nombre' => 'Línea de Crédito Rotativa',
-            'descripcion' => 'Línea de crédito rotativa con disponibilidad continua',
-            'tipo' => 'linea_credito',
-            'tasa_interes' => 20.0000,
-            'comision' => 2.5000,
-            'monto_minimo' => 500.00,
-            'monto_maximo' => 50000.00,
-            'plazo_min_dias' => 30,
-            'plazo_max_dias' => 365,
-            'dias_mora_incobrable' => 120,
-            'interes_moratorio' => 15.0000,
-            'requiere_fiador' => false,
-        ]);
+        // ─── Condiciones de Crédito Comercial (creadas por CondicionCreditoSeeder) ───
+        // Las condiciones se crean en CondicionCreditoSeeder que corre después de este seeder.
+        // Los créditos de demo se crean en CondicionCreditoSeeder una vez que las condiciones existen.
 
         // ─── Clientes Naturales ───────────────────────────────
         $departamentos = ['San Salvador', 'La Libertad', 'San Miguel', 'Santa Ana', 'Sonsonate'];
@@ -236,15 +189,15 @@ class DemoDataSeeder extends Seeder
             $er['impuesto_renta'] = rand(2000, 20000);
 
             $datosJuridicos = ClienteJuridico::create([
-                'cliente_id' => $cliente->id,
-                'nombre_comercial' => $emp['nombre'],
-                'giro' => $emp['giro'],
+                'cliente_id'          => $cliente->id,
+                'nombre_comercial'    => $emp['nombre'],
+                'giro'                => $emp['giro'],
                 'representante_legal' => $nombres[$idx] ?? 'Representante Legal',
-                'balance_general' => $bg,
-                'estado_resultados' => $er,
-                'fecha_balance' => now()->subMonths(rand(1, 6)),
-                'numero_empleados' => rand(5, 200),
-                'fecha_constitucion' => now()->subYears(rand(2, 20)),
+                'balance_general'     => $bg,
+                'estado_resultados'   => $er,
+                'fecha_balance'       => now()->subMonths(rand(1, 6)),
+                'numero_empleados'    => rand(5, 200),
+                'fecha_constitucion'  => now()->subYears(rand(2, 20)),
             ]);
 
             // Calcular ratios automáticamente
@@ -253,46 +206,7 @@ class DemoDataSeeder extends Seeder
             $clientesJuridicos[] = $cliente;
         }
 
-        // ─── Créditos de ejemplo ──────────────────────────────
-        $creditoService = app(CreditoService::class);
-        $todosClientes = array_merge($clientesNaturales, $clientesJuridicos);
-
-        for ($i = 0; $i < 30; $i++) {
-            $cliente = $todosClientes[$i % count($todosClientes)];
-            $producto = $productos[$i % count($productos)];
-            $monto = rand(
-                (int) $producto->monto_minimo,
-                min((int) $producto->monto_maximo, 20000)
-            );
-            $cuotas = [6, 12, 18, 24, 36][array_rand([6, 12, 18, 24, 36])];
-
-            try {
-                $creditoService->crearCredito([
-                    'cliente_id' => $cliente->id,
-                    'producto_credito_id' => $producto->id,
-                    'vendedor_id' => $vendedores[$i % count($vendedores)]->id,
-                    'cartera_id' => $carteras[$i % count($carteras)]->id,
-                    'politica_cobro_id' => $politica->id,
-                    'monto' => $monto,
-                    'plazo_dias' => $cuotas * 30,
-                    'numero_cuotas' => $cuotas,
-                    'fecha_solicitud' => now()->subDays(rand(10, 180)),
-                    'fecha_desembolso' => now()->subDays(rand(5, 150)),
-                    'tipo_venta' => 'credito',
-                ]);
-            } catch (\Exception $e) {
-                // Continuar si hay error con algún crédito
-                continue;
-            }
-        }
-
-        // Aprobar y activar créditos
-        Credito::where('estado', 'solicitado')->update([
-            'estado' => 'vigente',
-            'fecha_aprobacion' => now()->subDays(rand(1, 5)),
-            'aprobado_por' => $admin->id,
-        ]);
-
-        $this->command->info('✅ Demo data seeded: 3 users, 5 zones, 3 sellers, 50 clients, 3 products, ~30 credits');
+        $this->command->info('✅ Demo data seeded: 3 users, 5 zones, 3 sellers, 50 clients.');
+        $this->command->info('   Las condiciones de crédito se crearán en CondicionCreditoSeeder.');
     }
 }

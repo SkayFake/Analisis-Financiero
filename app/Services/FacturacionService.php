@@ -15,12 +15,18 @@ class FacturacionService
     protected $inventarioService;
     protected $firmadorService;
     protected $dteApiService;
+    protected $creditoService;
 
-    public function __construct(InventarioService $inventarioService, FirmadorService $firmadorService, DteApiService $dteApiService)
-    {
+    public function __construct(
+        InventarioService $inventarioService,
+        FirmadorService   $firmadorService,
+        DteApiService     $dteApiService,
+        CreditoService    $creditoService
+    ) {
         $this->inventarioService = $inventarioService;
-        $this->firmadorService = $firmadorService;
-        $this->dteApiService = $dteApiService;
+        $this->firmadorService   = $firmadorService;
+        $this->dteApiService     = $dteApiService;
+        $this->creditoService    = $creditoService;
     }
 
     /**
@@ -92,9 +98,17 @@ class FacturacionService
                 'total_pagar' => $totalPagar,
             ]);
 
-            // 3. Crear CxC si es crédito (Simplificado, ideal integrarlo con CreditoService)
+            // 3. Si es venta al crédito → crear crédito comercial automáticamente
             if ($venta->condicion_operacion === '2' && $venta->cliente_id) {
-                // ... lógica para generar la cuenta por cobrar en el módulo 1 ...
+                $condicionesCredito = $datosVenta['condiciones_credito'] ?? [];
+                if (!empty($condicionesCredito['condicion_credito_id'])) {
+                    try {
+                        $this->creditoService->crearCreditoDesdeVenta($venta, $condicionesCredito);
+                    } catch (\Exception $e) {
+                        // El crédito no bloquea la factura; se puede crear manualmente después.
+                        \Log::warning("Factura {$venta->numero_control}: no se pudo crear crédito automáticamente. " . $e->getMessage());
+                    }
+                }
             }
 
             // 4. Firmar y Transmitir si no es Ticket interno

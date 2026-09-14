@@ -7,20 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 class Cuota extends Model
 {
     protected $fillable = [
-        'credito_id', 'numero_cuota', 'fecha_vencimiento', 'capital',
-        'interes', 'comision', 'total', 'saldo_pendiente', 'monto_pagado',
-        'estado', 'fecha_pago', 'dias_mora',
+        'credito_id',
+        'numero_cuota',
+        'fecha_vencimiento',
+        'capital',
+        'interes',
+        'total',
+        'mora',
+        'saldo_pendiente',
+        'monto_pagado',
+        'estado',
+        'fecha_pago',
+        'dias_mora',
     ];
 
     protected $casts = [
-        'capital' => 'decimal:2',
-        'interes' => 'decimal:2',
-        'comision' => 'decimal:2',
-        'total' => 'decimal:2',
-        'saldo_pendiente' => 'decimal:2',
-        'monto_pagado' => 'decimal:2',
+        'capital'          => 'decimal:2',
+        'interes'          => 'decimal:2',
+        'total'            => 'decimal:2',
+        'mora'             => 'decimal:2',
+        'saldo_pendiente'  => 'decimal:2',
+        'monto_pagado'     => 'decimal:2',
         'fecha_vencimiento' => 'date',
-        'fecha_pago' => 'date',
+        'fecha_pago'       => 'date',
     ];
 
     public function credito()
@@ -33,7 +42,7 @@ class Cuota extends Model
         return $this->hasMany(Pago::class);
     }
 
-    // ─── Scopes ──────────────────────────────────────────────────
+    // ─── Scopes ──────────────────────────────────────────────────────────
 
     public function scopePendientes($query)
     {
@@ -45,21 +54,30 @@ class Cuota extends Model
         return $query->where('estado', 'vencida');
     }
 
-    // ─── Atributos ───────────────────────────────────────────────
+    // ─── Atributos ───────────────────────────────────────────────────────
 
-    public function getRestanteAttribute()
+    /** Monto restante a pagar en esta cuota */
+    public function getRestanteAttribute(): float
     {
-        return $this->total - $this->monto_pagado;
+        return (float) $this->total - (float) $this->monto_pagado;
     }
 
-    public function getEstaVencidaAttribute()
+    /** Total incluyendo mora acumulada */
+    public function getTotalConMoraAttribute(): float
     {
+        return (float) $this->total + (float) $this->mora;
+    }
+
+    public function getEstaVencidaAttribute(): bool
+    {
+        if (!$this->fecha_vencimiento) return false;
         return $this->fecha_vencimiento->isPast()
             && in_array($this->estado, ['pendiente', 'parcial']);
     }
 
     /**
-     * Actualiza los días de mora de esta cuota.
+     * Calcula y actualiza los días de mora de esta cuota.
+     * Se considera mora solo después de los días de gracia del crédito.
      */
     public function actualizarDiasMora(): int
     {
@@ -67,9 +85,13 @@ class Cuota extends Model
             return 0;
         }
 
-        $dias = (int) floor($this->fecha_vencimiento->diffInDays(now()));
-        $this->update(['dias_mora' => $dias]);
+        $diasGracia = $this->credito?->dias_gracia ?? 3;
+        $diasVencida = (int) floor($this->fecha_vencimiento->diffInDays(now()));
 
-        return $dias;
+        // Solo mora después de días de gracia
+        $diasMora = max(0, $diasVencida - $diasGracia);
+        $this->update(['dias_mora' => $diasMora]);
+
+        return $diasMora;
     }
 }

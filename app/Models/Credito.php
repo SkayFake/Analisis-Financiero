@@ -4,43 +4,102 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
+/**
+ * Crédito Comercial.
+ *
+ * Un crédito comercial nace cuando un cliente compra mercadería a crédito.
+ * El monto del crédito = valor de la factura (venta).
+ * NO es un préstamo de dinero; es la postergación de pago de mercadería.
+ *
+ * Flujo:
+ * Venta al crédito → CreditoComercial → Cuotas → Pagos
+ *
+ * Estados de aprobación (Ley LPC El Salvador):
+ * - 'pendiente_aprobacion': Cliente nuevo o monto > límite auto-aprobado
+ * - 'aprobado': Crédito pre-aprobado, en espera de activarse
+ * - 'vigente': Crédito activo, cuotas al día
+ * - 'vencido': Tiene cuotas vencidas (> dias_gracia)
+ * - 'incobrable': > 180 días en mora (estándar El Salvador para provisiones)
+ * - 'refinanciado': Reestructurado
+ * - 'cancelado': Pagado en su totalidad
+ * - 'rechazado': No aprobado por la institución
+ */
 class Credito extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'numero', 'cliente_id', 'producto_credito_id', 'vendedor_id',
-        'cartera_id', 'politica_cobro_id', 'monto_original', 'saldo_actual',
-        'tasa_interes', 'comision', 'plazo_dias', 'numero_cuotas',
-        'fecha_solicitud', 'fecha_aprobacion', 'fecha_desembolso',
-        'fecha_vencimiento', 'fecha_cancelacion', 'estado', 'tipo_venta',
-        'interes_moratorio', 'dias_mora', 'observaciones', 'aprobado_por',
+        'numero',
+        'cliente_id',
+        'vendedor_id',
+        'cartera_id',
+        'politica_cobro_id',
+        'venta_id',
+        'condicion_credito_id',
+        'monto_original',
+        'saldo_actual',
+        'interes_acumulado',
+        'mora_acumulada',
+        'tasa_interes_anual',
+        'tasa_mora_mensual',
+        'dias_gracia',
+        'numero_cuotas',
+        'frecuencia_pago',
+        'plazo_dias',
+        'fecha_solicitud',
+        'fecha_aprobacion',
+        'fecha_primera_cuota',
+        'fecha_vencimiento',
+        'fecha_cancelacion',
+        'estado',
+        'dias_mora',
+        'observaciones',
+        'aprobado_por',
+        'motivo_aprobacion',
+        'dui_verificado',
+        'referencia_verificada',
     ];
 
     protected $casts = [
-        'monto_original' => 'decimal:2',
-        'saldo_actual' => 'decimal:2',
-        'tasa_interes' => 'decimal:4',
-        'comision' => 'decimal:4',
-        'interes_moratorio' => 'decimal:4',
-        'fecha_solicitud' => 'date',
-        'fecha_aprobacion' => 'date',
-        'fecha_desembolso' => 'date',
-        'fecha_vencimiento' => 'date',
-        'fecha_cancelacion' => 'date',
+        'monto_original'      => 'decimal:2',
+        'saldo_actual'        => 'decimal:2',
+        'interes_acumulado'   => 'decimal:2',
+        'mora_acumulada'      => 'decimal:2',
+        'tasa_interes_anual'  => 'decimal:4',
+        'tasa_mora_mensual'   => 'decimal:4',
+        'fecha_solicitud'     => 'date',
+        'fecha_aprobacion'    => 'date',
+        'fecha_primera_cuota' => 'date',
+        'fecha_vencimiento'   => 'date',
+        'fecha_cancelacion'   => 'date',
+        'dui_verificado'      => 'boolean',
+        'referencia_verificada' => 'boolean',
     ];
 
-    // ─── Relaciones ──────────────────────────────────────────────
+    // ─── Relaciones ──────────────────────────────────────────────────────
 
     public function cliente()
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    public function productoCredito()
+    /** La factura de origen del crédito comercial */
+    public function venta()
     {
-        return $this->belongsTo(ProductoCredito::class);
+        return $this->belongsTo(Venta::class);
+    }
+
+    /** Alias semántico: la "factura" del crédito */
+    public function factura()
+    {
+        return $this->venta();
+    }
+
+    public function condicionCredito()
+    {
+        return $this->belongsTo(CondicionCredito::class);
     }
 
     public function vendedor()
@@ -93,7 +152,7 @@ class Credito extends Model
         return $this->belongsTo(User::class, 'aprobado_por');
     }
 
-    // ─── Scopes ──────────────────────────────────────────────────
+    // ─── Scopes ──────────────────────────────────────────────────────────
 
     public function scopeVigentes($query)
     {
@@ -115,6 +174,11 @@ class Credito extends Model
         return $query->whereIn('estado', ['vigente', 'vencido']);
     }
 
+    public function scopePendienteAprobacion($query)
+    {
+        return $query->where('estado', 'pendiente_aprobacion');
+    }
+
     public function scopePorEstado($query, string $estado)
     {
         return $query->where('estado', $estado);
@@ -126,26 +190,27 @@ class Credito extends Model
             ->whereBetween('fecha_vencimiento', [now(), now()->addDays($dias)]);
     }
 
-    // ─── Atributos computados ────────────────────────────────────
+    // ─── Atributos computados ────────────────────────────────────────────
 
-    public function getTotalPagadoAttribute()
+    public function getTotalPagadoAttribute(): float
     {
-        return $this->pagos()->sum('monto_total');
+        return (float) $this->pagos()->sum('monto_total');
     }
 
-    public function getPorcentajePagadoAttribute()
+    public function getPorcentajePagadoAttribute(): float
     {
-        if ($this->monto_original <= 0) return 0;
-        return round(($this->total_pagado / $this->monto_original) * 100, 2);
+        if ((float) $this->monto_original <= 0) return 0;
+        return round(($this->total_pagado / (float) $this->monto_original) * 100, 2);
     }
 
-    public function getEstaVencidoAttribute()
+    public function getEstaVencidoAttribute(): bool
     {
-        return $this->fecha_vencimiento && $this->fecha_vencimiento->isPast()
+        return $this->fecha_vencimiento
+            && $this->fecha_vencimiento->isPast()
             && in_array($this->estado, ['vigente', 'vencido']);
     }
 
-    public function getCuotaPendienteAttribute()
+    public function getCuotaPendienteAttribute(): ?Cuota
     {
         return $this->cuotas()
             ->whereIn('estado', ['pendiente', 'vencida', 'parcial'])
@@ -153,14 +218,41 @@ class Credito extends Model
             ->first();
     }
 
+    /** Indica si tiene interés comercial o es crédito a precio de lista */
+    public function getTieneInteresAttribute(): bool
+    {
+        return (float) $this->tasa_interes_anual > 0;
+    }
+
+    /** Etiqueta del tipo de crédito para la UI */
+    public function getTipoCreditoLabelAttribute(): string
+    {
+        if ((float) $this->tasa_interes_anual <= 0) {
+            return 'Crédito comercial sin interés';
+        }
+        return 'Crédito comercial con interés (' . number_format($this->tasa_interes_anual, 2) . '% anual)';
+    }
+
+    /** Etiqueta de frecuencia de pago */
+    public function getFrecuenciaLabelAttribute(): string
+    {
+        return match ($this->frecuencia_pago) {
+            'semanal'   => 'Semanal',
+            'quincenal' => 'Quincenal',
+            'mensual'   => 'Mensual',
+            default     => $this->frecuencia_pago,
+        };
+    }
+
     /**
-     * Genera un número único de crédito.
+     * Genera un número único de crédito comercial.
+     * Formato: CC-YYYY-NNNNNN
      */
     public static function generarNumero(): string
     {
         $año = date('Y');
-        $ultimo = static::where('numero', 'like', "CR-{$año}-%")
-            ->orderByRaw("CAST(SUBSTRING(numero FROM '[0-9]+$') AS INTEGER) DESC")
+        $ultimo = static::where('numero', 'like', "CC-{$año}-%")
+            ->orderByDesc('id')
             ->value('numero');
 
         if ($ultimo) {
@@ -169,6 +261,6 @@ class Credito extends Model
             $seq = 1;
         }
 
-        return sprintf('CR-%s-%06d', $año, $seq);
+        return sprintf('CC-%s-%06d', $año, $seq);
     }
 }
