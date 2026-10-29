@@ -23,6 +23,7 @@
 
             <form wire:submit.prevent="guardar">
                 <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    @include('components.errores-validacion')
                     @if(session()->has('error'))
                         <div class="alert alert-danger" style="margin-bottom: 0;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -87,20 +88,20 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label class="form-label">Cantidad <span class="required">*</span></label>
-                            <input type="number" wire:model="cantidad" step="0.01" class="form-input" placeholder="1.00" required min="0.01">
+                            <input type="number" wire:model="cantidad" step="0.0001" class="form-input" placeholder="1.00" required min="0.01" max="999999.9999">
                             @error('cantidad') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         @if($tipo == 'entrada')
                         <div class="form-group">
                             <label class="form-label">Costo Unitario Compra ($) <span class="required">*</span></label>
-                            <input type="number" wire:model="costo_unitario" step="0.0001" class="form-input" placeholder="0.0000" required min="0">
+                            <input type="number" wire:model="costo_unitario" step="0.0001" class="form-input" placeholder="0.0000" required min="0" max="99999999.9999">
                             @error('costo_unitario') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                         @else
                         <div class="form-group">
                             <label class="form-label">Referencia Documento</label>
-                            <input type="text" wire:model="referencia" class="form-input" placeholder="Ej: REM-001, Vale #45">
+                            <input type="text" wire:model="referencia" class="form-input" placeholder="Ej: REM-001, Vale #45" maxlength="255">
                         </div>
                         @endif
                     </div>
@@ -109,7 +110,7 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label class="form-label">Número de Lote (Opcional)</label>
-                            <input type="text" wire:model="lote" class="form-input" placeholder="Ej. L-2026-A1">
+                            <input type="text" wire:model="lote" class="form-input" placeholder="Ej. L-2026-A1" maxlength="50">
                         </div>
 
                         <div class="form-group">
@@ -121,7 +122,7 @@
                     {{-- Observaciones --}}
                     <div class="form-group">
                         <label class="form-label">Observaciones / Justificación</label>
-                        <textarea wire:model="observaciones" class="form-input" rows="2" placeholder="Detalle adicional del movimiento..."></textarea>
+                        <textarea wire:model="observaciones" class="form-input" rows="2" placeholder="Detalle adicional del movimiento..." maxlength="2000"></textarea>
                     </div>
                 </div>
 

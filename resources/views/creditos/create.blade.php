@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="title">Registrar Crédito Comercial</x-slot>
+    @include('components.errores-validacion')
 
     <div class="page-header">
         <div class="page-header-left">
@@ -185,7 +186,7 @@
                             <input type="date" name="fecha_primera_cuota"
                                 class="form-input @error('fecha_primera_cuota') error @enderror"
                                 value="{{ old('fecha_primera_cuota', now()->addMonth()->toDateString()) }}"
-                                required min="{{ now()->addDay()->toDateString() }}">
+                                required min="{{ now()->toDateString() }}">
                             @error('fecha_primera_cuota')<span class="form-error">{{ $message }}</span>@enderror
                         </div>
                     </div>
@@ -237,16 +238,16 @@
                             <label class="form-label" style="font-weight: 700; color: var(--neutral-800);">Información del Fiador (si aplica)</label>
                             <div class="grid-2" style="margin-top: 0.5rem;">
                                 <div>
-                                    <input type="text" name="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" value="{{ old('fiador_nombre') }}">
+                                    <input type="text" name="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" value="{{ old('fiador_nombre') }}" maxlength="150">
                                 </div>
                                 <div>
-                                    <input type="text" name="fiador_dui" class="form-input" placeholder="DUI del fiador" value="{{ old('fiador_dui') }}">
+                                    <input type="text" name="fiador_dui" class="form-input" placeholder="01234567-8" value="{{ old('fiador_dui') }}" inputmode="numeric" maxlength="10" pattern="[0-9]{8}-?[0-9]" title="DUI de 9 dígitos con verificador correcto. Puede escribirlo con o sin guion.">
                                 </div>
                                 <div>
-                                    <input type="text" name="fiador_telefono" class="form-input" placeholder="Teléfono" value="{{ old('fiador_telefono') }}">
+                                    <input type="tel" name="fiador_telefono" class="form-input" placeholder="Teléfono" value="{{ old('fiador_telefono') }}" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                                 </div>
                                 <div>
-                                    <input type="text" name="fiador_direccion" class="form-input" placeholder="Dirección" value="{{ old('fiador_direccion') }}">
+                                    <input type="text" name="fiador_direccion" class="form-input" placeholder="Dirección" value="{{ old('fiador_direccion') }}" maxlength="250">
                                 </div>
                             </div>
                         </div>
@@ -254,7 +255,7 @@
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Observaciones</label>
                             <textarea name="observaciones" class="form-input" rows="2"
-                                placeholder="Garantías, condiciones especiales, etc.">{{ old('observaciones') }}</textarea>
+                                placeholder="Garantías, condiciones especiales, etc." maxlength="2000">{{ old('observaciones') }}</textarea>
                         </div>
                     </div>
                 </div>

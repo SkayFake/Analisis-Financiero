@@ -5,24 +5,35 @@ namespace App\Livewire\Vendedores;
 use Livewire\Component;
 use App\Models\Vendedor;
 use App\Models\Zona;
+use App\Rules\TelefonoSalvador;
+use App\Support\ReglasFormulario;
+use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
+use App\Livewire\Concerns\NormalizaDatosSalvador;
 
 class VendedoresDashboard extends Component
 {
+    use NormalizaDatosSalvador;
     public $showModal = false;
+    #[Locked]
     public $modalMode = 'create';
+    #[Locked]
     public $vendedorId;
 
     public $codigo, $nombre, $telefono, $email, $zona_id, $meta_mensual, $activo = true;
 
-    protected $rules = [
-        'codigo' => 'required|string|max:20',
-        'nombre' => 'required|string|max:255',
-        'telefono' => 'nullable|string|max:20',
-        'email' => 'nullable|email|max:255',
-        'zona_id' => 'nullable|exists:zonas,id',
-        'meta_mensual' => 'numeric|min:0',
-        'activo' => 'boolean',
-    ];
+    protected function rules(): array
+    {
+        return [
+            'codigo' => ['required', ...explode('|', ReglasFormulario::CODIGO), 'max:20', Rule::unique('vendedores', 'codigo')->ignore($this->vendedorId)],
+            'nombre' => 'required|string|max:255|regex:/[\p{L}]/u',
+            'telefono' => ['bail', 'nullable', 'string', new TelefonoSalvador],
+            'email' => 'nullable|string|email:rfc|max:255',
+            'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')->where('activa', true)],
+            'meta_mensual' => 'nullable|'.ReglasFormulario::DINERO,
+            'activo' => 'required|boolean',
+        ];
+    }
 
     public function create()
     {
@@ -51,6 +62,7 @@ class VendedoresDashboard extends Component
 
     public function save()
     {
+        $this->normalizarCampos(['codigo', 'nombre', 'telefono', 'email']);
         $this->validate();
 
         if ($this->modalMode === 'create') {

@@ -65,24 +65,25 @@
             </div>
             <form wire:submit.prevent="save">
                 <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                    @include('components.errores-validacion')
                     <div>
                         <label class="form-label">Código</label>
-                        <input type="text" wire:model="codigo" class="form-input" required>
+                        <input type="text" wire:model="codigo" class="form-input" required maxlength="20">
                         @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label class="form-label">Nombre Completo</label>
-                        <input type="text" wire:model="nombre" class="form-input" required>
+                        <input type="text" wire:model="nombre" class="form-input" required maxlength="255">
                         @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label">Teléfono</label>
-                            <input type="text" wire:model="telefono" class="form-input">
+                            <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                         </div>
                         <div>
                             <label class="form-label">Email</label>
-                            <input type="email" wire:model="email" class="form-input">
+                            <input type="email" wire:model="email" class="form-input" maxlength="255">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -97,7 +98,7 @@
                         </div>
                         <div>
                             <label class="form-label">Meta Mensual ($)</label>
-                            <input type="number" step="0.01" wire:model="meta_mensual" class="form-input">
+                            <input type="number" step="0.01" wire:model="meta_mensual" class="form-input" min="0" max="999999999999.99">
                         </div>
                     </div>
                     <div>

@@ -153,7 +153,7 @@
                                    class="form-input" 
                                    style="padding-left: 2.5rem; font-size: 0.95rem; height: 42px;" 
                                    placeholder="Escribe nombre o código de barra (Ej: Smart TV, ELEC-001)..." 
-                                   autofocus>
+                                   autofocus maxlength="100">
                         </div>
 
                         {{-- Dropdown Flotante de Resultados --}}
@@ -460,7 +460,7 @@
                         </div>
                         <div class="form-group" style="margin: 0;">
                             <label class="form-label" style="font-size: 0.75rem;">1ª Fecha Pago <span class="required">*</span></label>
-                            <input type="date" wire:model.live="fecha_primera_cuota" class="form-input" style="padding: 0.35rem 0.5rem; font-size: 0.875rem;">
+                            <input type="date" wire:model.live="fecha_primera_cuota" min="{{ now()->toDateString() }}" class="form-input" style="padding: 0.35rem 0.5rem; font-size: 0.875rem;">
                             @error('fecha_primera_cuota') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     </div>
@@ -484,14 +484,14 @@
                                 Datos del Fiador (Requerido para aprobar)
                             </div>
                             <div class="form-group" style="margin-bottom: 0.35rem;">
-                                <input type="text" wire:model.live="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                                <input type="text" wire:model.live="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;" maxlength="150">
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.35rem;">
-                                <input type="text" wire:model.live="fiador_dui" class="form-input" placeholder="DUI fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
-                                <input type="text" wire:model.live="fiador_telefono" class="form-input" placeholder="Teléfono" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                                <input type="text" wire:model.live="fiador_dui" class="form-input" placeholder="01234567-8" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;" inputmode="numeric" maxlength="10" pattern="[0-9]{8}-?[0-9]" title="DUI de 9 dígitos con verificador correcto. Puede escribirlo con o sin guion.">
+                                <input type="tel" wire:model.live="fiador_telefono" class="form-input" placeholder="Teléfono" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <input type="text" wire:model.live="fiador_direccion" class="form-input" placeholder="Dirección del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                                <input type="text" wire:model.live="fiador_direccion" class="form-input" placeholder="Dirección del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;" maxlength="250">
                             </div>
                         </div>
                     @endif

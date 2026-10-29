@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="title">Nuevo Cliente</x-slot>
+    @include('components.errores-validacion')
 
     <div class="page-header">
         <div class="page-header-left">
@@ -51,25 +52,25 @@
                                 <span x-text="tipoCliente === 'natural' ? 'Nombre Completo' : 'Razón Social'"></span>
                                 <span class="required">*</span>
                             </label>
-                            <input type="text" name="nombre" class="form-input @error('nombre') error @enderror" value="{{ old('nombre') }}" required placeholder="Ej: Juan Carlos Pérez o Corporación Industrial S.A. de C.V.">
+                            <input type="text" name="nombre" class="form-input @error('nombre') error @enderror" value="{{ old('nombre') }}" required placeholder="Ej: Juan Carlos Pérez o Corporación Industrial S.A. de C.V." maxlength="255">
                             @error('nombre') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group" x-show="tipoCliente === 'natural'">
                             <label class="form-label">DUI (El Salvador)</label>
-                            <input type="text" name="dui" class="form-input @error('dui') error @enderror" value="{{ old('dui') }}" placeholder="00000000-0">
+                            <input type="text" name="dui" class="form-input @error('dui') error @enderror" value="{{ old('dui') }}" placeholder="01234567-8" inputmode="numeric" maxlength="10" pattern="[0-9]{8}-?[0-9]" title="DUI de 9 dígitos con verificador correcto. Puede escribirlo con o sin guion.">
                             @error('dui') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">NIT</label>
-                            <input type="text" name="nit" class="form-input @error('nit') error @enderror" value="{{ old('nit') }}" placeholder="0000-000000-000-0">
+                            <input type="text" name="nit" class="form-input @error('nit') error @enderror" value="{{ old('nit') }}" placeholder="0614-010101-001-3" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dígitos; las personas naturales también pueden utilizar el DUI homologado.">
                             @error('nit') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group" x-show="tipoCliente === 'juridica'">
                             <label class="form-label">NRC (Registro de Contribuyente)</label>
-                            <input type="text" name="nrc" class="form-input @error('nrc') error @enderror" value="{{ old('nrc') }}" placeholder="Ej: 123456-7">
+                            <input type="text" name="nrc" class="form-input @error('nrc') error @enderror" value="{{ old('nrc') }}" placeholder="Ej: 123456-7" inputmode="numeric" maxlength="9" pattern="(?:[0-9]{1,8}|[0-9]{1,7}-[0-9])" title="NRC de 1 a 8 dígitos. Se admite un guion antes del último dígito.">
                             @error('nrc') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
@@ -87,7 +88,7 @@
 
                         <div class="form-group" x-show="tipoCliente === 'natural'">
                             <label class="form-label">Lugar de Trabajo / Actividad</label>
-                            <input type="text" name="lugar_trabajo" class="form-input" value="{{ old('lugar_trabajo') }}" placeholder="Empresa o Negocio propio">
+                            <input type="text" name="lugar_trabajo" class="form-input" value="{{ old('lugar_trabajo') }}" placeholder="Empresa o Negocio propio" maxlength="255">
                         </div>
                     </div>
                 </div>
@@ -100,27 +101,27 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label class="form-label">Teléfono Fijo</label>
-                            <input type="text" name="telefono" class="form-input" value="{{ old('telefono') }}" placeholder="2200-0000">
+                            <input type="tel" name="telefono" class="form-input" value="{{ old('telefono') }}" placeholder="2200-0000" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Celular</label>
-                            <input type="text" name="celular" class="form-input" value="{{ old('celular') }}" placeholder="7000-0000">
+                            <input type="tel" name="celular" class="form-input" value="{{ old('celular') }}" placeholder="7000-0000" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[67][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Celular: comienza con 6 o 7.">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Correo Electrónico</label>
-                            <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="cliente@ejemplo.com">
+                            <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="cliente@ejemplo.com" maxlength="255">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Departamento</label>
-                            <input type="text" name="departamento" class="form-input" value="{{ old('departamento', 'San Salvador') }}">
+                            <select name="departamento" class="form-select"><option value="">Seleccione...</option>@foreach(\App\Support\DatosSalvador::DEPARTAMENTOS as $departamento)<option value="{{ $departamento }}" @selected(old('departamento') === $departamento)>{{ $departamento }}</option>@endforeach</select>
                         </div>
 
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Dirección Completa</label>
-                            <textarea name="direccion" class="form-input" rows="2" placeholder="Calle, colonia, número de casa, punto de referencia...">{{ old('direccion') }}</textarea>
+                            <textarea name="direccion" class="form-input" rows="2" placeholder="Calle, colonia, número de casa, punto de referencia..." maxlength="2000">{{ old('direccion') }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -133,22 +134,22 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label class="form-label">Nombre Comercial</label>
-                            <input type="text" name="nombre_comercial" class="form-input" value="{{ old('nombre_comercial') }}" placeholder="Ej: Industrias del Café">
+                            <input type="text" name="nombre_comercial" class="form-input" value="{{ old('nombre_comercial') }}" placeholder="Ej: Industrias del Café" maxlength="255">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Giro Económico</label>
-                            <input type="text" name="giro" class="form-input" value="{{ old('giro') }}" placeholder="Ej: Venta de materiales de construcción">
+                            <input type="text" name="giro" class="form-input" value="{{ old('giro') }}" placeholder="Ej: Venta de materiales de construcción" maxlength="255">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Representante Legal</label>
-                            <input type="text" name="representante_legal" class="form-input" value="{{ old('representante_legal') }}" placeholder="Nombre del apoderado o representante">
+                            <input type="text" name="representante_legal" class="form-input" value="{{ old('representante_legal') }}" placeholder="Nombre del apoderado o representante" maxlength="255">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">DUI del Representante</label>
-                            <input type="text" name="dui_representante" class="form-input" value="{{ old('dui_representante') }}" placeholder="00000000-0">
+                            <input type="text" name="dui_representante" class="form-input" value="{{ old('dui_representante') }}" placeholder="01234567-8" inputmode="numeric" maxlength="10" pattern="[0-9]{8}-?[0-9]" title="DUI de 9 dígitos con verificador correcto. Puede escribirlo con o sin guion.">
                         </div>
                     </div>
                 </div>
@@ -161,12 +162,12 @@
                     <div class="grid-3">
                         <div class="form-group">
                             <label class="form-label">Ingresos Mensuales ($)</label>
-                            <input type="number" step="0.01" name="ingresos" class="form-input" value="{{ old('ingresos', 0) }}" placeholder="0.00">
+                            <input type="number" step="0.01" name="ingresos" class="form-input" value="{{ old('ingresos', 0) }}" placeholder="0.00" min="0" max="999999999999.99">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Egresos Mensuales ($)</label>
-                            <input type="number" step="0.01" name="egresos" class="form-input" value="{{ old('egresos', 0) }}" placeholder="0.00">
+                            <input type="number" step="0.01" name="egresos" class="form-input" value="{{ old('egresos', 0) }}" placeholder="0.00" min="0" max="999999999999.99">
                         </div>
 
                         <div class="form-group">

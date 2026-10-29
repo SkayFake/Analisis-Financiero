@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="title">Crédito {{ $credito->numero }}</x-slot>
+    @include('components.errores-validacion')
 
     <div class="page-header">
         <div class="page-header-left">
@@ -384,7 +385,7 @@
                     <div class="form-group">
                         <label class="form-label">Monto a Recibir ($)</label>
                         <input type="number" step="0.01" name="monto" class="form-input" required
-                            value="{{ old('monto', number_format($credito->cuota_pendiente?->saldo_por_pagar ?? 0, 2, '.', '')) }}">
+                            value="{{ old('monto', number_format($credito->cuota_pendiente?->saldo_por_pagar ?? 0, 2, '.', '')) }}" min="0.01" max="999999999999.99">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Forma de Pago</label>
@@ -397,7 +398,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Referencia / Comprobante (Opcional)</label>
-                        <input type="text" name="referencia" class="form-input" placeholder="Ej. REF-409182">
+                        <input type="text" name="referencia" class="form-input" placeholder="Ej. REF-409182" maxlength="100">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -428,7 +429,7 @@
                     <div class="form-group">
                         <label class="form-label">Motivo de Aprobación <span class="required">*</span></label>
                         <textarea name="motivo" class="form-input" rows="3" required minlength="10"
-                            placeholder="Ej: Cliente presentó DUI, referencias verificadas, historial de pagos favorable..."></textarea>
+                            placeholder="Ej: Cliente presentó DUI, referencias verificadas, historial de pagos favorable..." maxlength="2000"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -453,7 +454,7 @@
                     <div class="form-group">
                         <label class="form-label">Motivo de Rechazo <span class="required">*</span></label>
                         <textarea name="motivo" class="form-input" rows="3" required minlength="10"
-                            placeholder="Ej: Documentación incompleta, referencias negativas, capacidad de pago insuficiente..."></textarea>
+                            placeholder="Ej: Documentación incompleta, referencias negativas, capacidad de pago insuficiente..." maxlength="2000"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

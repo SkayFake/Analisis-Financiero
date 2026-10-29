@@ -86,7 +86,7 @@
 
             <div class="form-group">
                 <label for="email" class="form-label">Correo Electrónico</label>
-                <input id="email" type="email" class="form-input @error('email') error @enderror" name="email" value="{{ old('email') ?? 'admin@erp.sv' }}" required autofocus>
+                <input id="email" type="email" class="form-input @error('email') error @enderror" name="email" maxlength="255" value="{{ old('email') }}" required autofocus autocomplete="username">
                 @error('email')
                     <span class="form-error">{{ $message }}</span>
                 @enderror
@@ -94,14 +94,14 @@
 
             <div class="form-group">
                 <label for="password" class="form-label">Contraseña</label>
-                <input id="password" type="password" class="form-input @error('password') error @enderror" name="password" required value="admin123">
+                <input id="password" type="password" class="form-input @error('password') error @enderror" name="password" maxlength="4096" required autocomplete="current-password">
                 @error('password')
                     <span class="form-error">{{ $message }}</span>
                 @enderror
             </div>
 
             <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                <input class="" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                <input class="" type="checkbox" name="remember" value="1" id="remember" {{ old('remember') ? 'checked' : '' }}>
                 <label class="form-label" for="remember" style="margin-bottom: 0;">
                     Recordarme
                 </label>

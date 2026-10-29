@@ -13,10 +13,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Livewire\Concerns\NormalizaDatosSalvador;
+use App\Support\ReglasFormulario;
 use Exception;
 
 class PuntoVenta extends Component
 {
+    use NormalizaDatosSalvador;
     // Cart Data
     public $detalles = [];
     public $subtotal = 0;
@@ -76,9 +79,14 @@ class PuntoVenta extends Component
         }
     }
     
+    public function updatedSearchProducto(): void
+    {
+        $this->validateOnly('searchProducto', ['searchProducto' => 'nullable|string|max:100']);
+    }
+
     public function getProductosProperty()
     {
-        if (strlen($this->searchProducto) < 2) return collect();
+        if (!is_string($this->searchProducto) || mb_strlen($this->searchProducto) < 2 || mb_strlen($this->searchProducto) > 100) return collect();
 
         return Producto::where('activo', true)
             ->where(function ($q) {
@@ -206,6 +214,7 @@ class PuntoVenta extends Component
     public function facturar()
     {
         Gate::authorize('create', Venta::class);
+        $this->normalizarCampos(['fiador_nombre', 'fiador_dui', 'fiador_telefono', 'fiador_direccion']);
         // Livewire properties can arrive as numbers; use the same representation in every branch.
         if (is_scalar($this->condicion_operacion)) {
             $this->condicion_operacion = (string) $this->condicion_operacion;
@@ -219,11 +228,7 @@ class PuntoVenta extends Component
             'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
             'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
             'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
-            'fiador_nombre' => 'nullable|string|max:150',
-            'fiador_dui' => 'nullable|string|max:20',
-            'fiador_telefono' => 'nullable|string|max:20',
-            'fiador_direccion' => 'nullable|string|max:250',
-        ];
+        ] + ReglasFormulario::fiador();
 
         $messages = [
             'detalles.required'      => 'Debe agregar al menos un producto a la factura.',
@@ -236,8 +241,8 @@ class PuntoVenta extends Component
             Gate::authorize('create', \App\Models\Credito::class);
 
             $rules['condicion_credito_id'] = 'required|exists:condiciones_credito,id';
-            $rules['numero_cuotas']        = 'required|integer|min:1';
-            $rules['fecha_primera_cuota']  = 'required|date|after_or_equal:today';
+            $rules['numero_cuotas']        = 'required|integer|min:1|max:120';
+            $rules['fecha_primera_cuota']  = 'required|date_format:Y-m-d|after_or_equal:today';
 
             $messages['condicion_credito_id.required'] = 'Seleccione una condición de crédito para la venta al crédito.';
             $messages['numero_cuotas.required']        = 'Indique el número de cuotas para el crédito.';

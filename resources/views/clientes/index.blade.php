@@ -89,7 +89,7 @@
                                class="form-input"
                                placeholder="Buscar por nombre, código o DUI..."
                                value="{{ request('buscar') }}"
-                               style="padding-left: 2.25rem;">
+                               style="padding-left: 2.25rem;" maxlength="150">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                              style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--neutral-400); pointer-events: none;">
                             <circle cx="11" cy="11" r="8"/>

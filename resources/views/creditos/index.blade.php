@@ -21,7 +21,7 @@
             <form action="{{ route('creditos.index') }}" method="GET" class="w-full" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                 <input type="text" name="buscar" class="form-input"
                     placeholder="Buscar por número, cliente o factura..."
-                    value="{{ request('buscar') }}" style="max-width: 380px;">
+                    value="{{ request('buscar') }}" style="max-width: 380px;" maxlength="150">
                 <select name="estado" class="form-select" style="max-width: 220px;">
                     <option value="">Todos los Estados</option>
                     <option value="pendiente_aprobacion" {{ request('estado') == 'pendiente_aprobacion' ? 'selected' : '' }}>Pendiente Aprobación</option>

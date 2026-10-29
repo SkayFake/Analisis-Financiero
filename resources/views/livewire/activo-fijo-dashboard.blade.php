@@ -221,6 +221,7 @@
 
             <form wire:submit.prevent="registrarActivo">
                 <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    @include('components.errores-validacion')
                     
                     {{-- Grid 1: Unidad & Categoría --}}
                     <div class="grid-2">
@@ -258,7 +259,7 @@
                                wire:model="form_nombre"
                                class="form-input"
                                placeholder="Ej: Computadora Laptop Dell Latitude 5420 o Maquinaria CNC..."
-                               required>
+                               required maxlength="255">
                         @error('form_nombre') <span class="form-error">{{ $message }}</span> @enderror
                     </div>
 
@@ -267,7 +268,7 @@
                         <div class="form-group">
                             <label class="form-label">Fecha Adquisición <span class="required">*</span></label>
                             <input type="date"
-                                   wire:model="form_fecha_adquisicion"
+                                   wire:model="form_fecha_adquisicion" max="{{ now()->toDateString() }}"
                                    class="form-input"
                                    required>
                             @error('form_fecha_adquisicion') <span class="form-error">{{ $message }}</span> @enderror
@@ -279,9 +280,9 @@
                                    wire:model="form_valor_adquisicion"
                                    class="form-input"
                                    step="0.01"
-                                   min="0.01"
+                                   min="1"
                                    placeholder="0.00"
-                                   required>
+                                   required max="9999999999.99">
                             @error('form_valor_adquisicion') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
@@ -292,7 +293,7 @@
                                    class="form-input"
                                    step="0.01"
                                    min="0"
-                                   placeholder="0.00">
+                                   placeholder="0.00" max="9999999999.99">
                         </div>
                     </div>
 
@@ -365,6 +366,7 @@
             </div>
 
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                    @include('components.errores-validacion')
                 <div class="alert alert-warning" style="margin-bottom: 0.5rem;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -386,7 +388,7 @@
                     <textarea wire:model="baja_detalles"
                               class="form-input"
                               rows="3"
-                              placeholder="Número de acta, comprador, motivo de daño irreparable, etc."></textarea>
+                              placeholder="Número de acta, comprador, motivo de daño irreparable, etc." maxlength="2000"></textarea>
                 </div>
             </div>
 

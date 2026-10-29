@@ -3,6 +3,13 @@
 namespace App\Livewire\Configuracion;
 
 use Livewire\Component;
+use Livewire\Attributes\Locked;
+use App\Livewire\Concerns\NormalizaDatosSalvador;
+use App\Rules\NitSalvador;
+use App\Rules\TelefonoSalvador;
+use App\Support\ReglasFormulario;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use App\Models\Bodega;
 use App\Models\Categoria;
 use App\Models\Marca;
@@ -13,9 +20,15 @@ use App\Models\Unidad;
 
 class CatalogosDashboard extends Component
 {
+    use NormalizaDatosSalvador;
+
+    private const MODELOS = ['bodegas' => Bodega::class, 'categorias' => Categoria::class, 'marcas' => Marca::class, 'unidades' => UnidadMedida::class, 'proveedores' => Proveedor::class, 'instituciones' => Institucion::class, 'unidades_organizativas' => Unidad::class];
+
+    #[Locked]
     public $tab = 'bodegas';
     public $showModal = false;
     public $modalMode = 'create';
+    #[Locked]
     public $itemId;
 
     // Form states
@@ -24,6 +37,7 @@ class CatalogosDashboard extends Component
 
     public function setTab($tabName)
     {
+        Validator::make(['tab' => $tabName], ['tab' => ['required', Rule::in(array_keys(self::MODELOS))]])->validate();
         $this->tab = $tabName;
         $this->showModal = false;
     }
@@ -32,6 +46,7 @@ class CatalogosDashboard extends Component
     {
         $this->reset(['itemId', 'nombre', 'direccion', 'descripcion', 'abreviatura', 'nit', 'telefono', 'dias_credito', 'codigo', 'institucion_id']);
         $this->activa = true;
+        $this->dias_credito = 0;
         $this->modalMode = 'create';
         $this->showModal = true;
     }
@@ -89,90 +104,28 @@ class CatalogosDashboard extends Component
 
     public function save()
     {
-        switch ($this->tab) {
-            case 'bodegas':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'direccion' => 'nullable|string',
-                    'activa' => 'boolean',
-                ]);
-                Bodega::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'direccion' => $this->direccion,
-                    'activa' => $this->activa,
-                ]);
-                break;
-            case 'categorias':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'descripcion' => 'nullable|string',
-                    'activa' => 'boolean',
-                ]);
-                Categoria::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'descripcion' => $this->descripcion,
-                    'activa' => $this->activa,
-                ]);
-                break;
-            case 'marcas':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'activa' => 'boolean',
-                ]);
-                Marca::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'activa' => $this->activa,
-                ]);
-                break;
-            case 'unidades':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'abreviatura' => 'required|string|max:10',
-                ]);
-                UnidadMedida::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'abreviatura' => $this->abreviatura,
-                ]);
-                break;
-            case 'proveedores':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'nit' => 'nullable|string|max:50',
-                    'telefono' => 'nullable|string|max:20',
-                    'dias_credito' => 'required|integer|min:0',
-                ]);
-                Proveedor::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'nit' => $this->nit,
-                    'telefono' => $this->telefono,
-                    'dias_credito' => $this->dias_credito,
-                ]);
-                break;
-            case 'instituciones':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'codigo' => 'required|string|max:4|unique:instituciones,codigo,' . $this->itemId,
-                ]);
-                Institucion::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'codigo' => $this->codigo,
-                ]);
-                break;
-            case 'unidades_organizativas':
-                $this->validate([
-                    'nombre' => 'required|string|max:255',
-                    'codigo' => 'required|string|max:4',
-                    'institucion_id' => 'required|exists:instituciones,id',
-                ]);
-                // TODO: handle unique constraint (institucion_id, codigo) properly if needed
-                Unidad::updateOrCreate(['id' => $this->itemId], [
-                    'nombre' => $this->nombre,
-                    'codigo' => $this->codigo,
-                    'institucion_id' => $this->institucion_id,
-                ]);
-                break;
-        }
-
+        Validator::make(['tab' => $this->tab], ['tab' => ['required', Rule::in(array_keys(self::MODELOS))]])->validate();
+        $this->normalizarCampos(['nombre', 'direccion', 'descripcion', 'abreviatura', 'nit', 'telefono', 'codigo']);
+        $rules = ['nombre' => 'required|string|max:255|regex:/[\p{L}\p{N}]/u'];
+        $rules += match ($this->tab) {
+            'bodegas' => ['direccion' => 'nullable|string|max:255', 'activa' => 'required|boolean'],
+            'categorias' => ['descripcion' => 'nullable|string|max:2000', 'activa' => 'required|boolean'],
+            'marcas' => ['activa' => 'required|boolean'],
+            'unidades' => ['abreviatura' => 'required|string|max:10|regex:/^[\p{L}0-9.]+$/u'],
+            'proveedores' => [
+                'nit' => ['bail', 'nullable', 'string', new NitSalvador],
+                'telefono' => ['bail', 'nullable', 'string', new TelefonoSalvador],
+                'dias_credito' => 'required|integer|min:0|max:3650',
+            ],
+            'instituciones' => ['codigo' => ['required', ...explode('|', ReglasFormulario::CODIGO), 'max:4', Rule::unique('instituciones', 'codigo')->ignore($this->itemId)]],
+            'unidades_organizativas' => [
+                'codigo' => ['required', ...explode('|', ReglasFormulario::CODIGO), 'max:4', Rule::unique('unidades', 'codigo')->where('institucion_id', $this->institucion_id)->ignore($this->itemId)],
+                'institucion_id' => 'required|integer|exists:instituciones,id',
+            ],
+        };
+        $datos = $this->validate($rules);
+        $modelo = self::MODELOS[$this->tab];
+        $modelo::updateOrCreate(['id' => $this->itemId], $datos);
         session()->flash('success', 'Registro guardado exitosamente.');
         $this->showModal = false;
     }

@@ -8,6 +8,7 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Services\InventarioService;
 use Exception;
+use Illuminate\Validation\Rule;
 
 class MovimientoInventarioModal extends Component
 {
@@ -83,17 +84,23 @@ class MovimientoInventarioModal extends Component
     public function guardar()
     {
         $this->validate([
-            'bodega_id' => 'required',
-            'producto_id' => 'required',
-            'cantidad' => 'required|numeric|min:0.01',
+            'tipo' => ['required', Rule::in(['entrada', 'salida', 'transferencia'])],
+            'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)],
+            'proveedor_id' => ['nullable', 'integer', Rule::exists('proveedores', 'id')->where('activo', true)],
+            'cantidad' => 'required|numeric|min:0.01|max:999999.9999|decimal:0,4',
+            'referencia' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string|max:2000',
+            'lote' => 'nullable|string|max:50',
+            'fecha_vencimiento' => 'nullable|date_format:Y-m-d',
         ]);
 
         if ($this->tipo == 'entrada') {
-            $this->validate(['costo_unitario' => 'required|numeric|min:0']);
+            $this->validate(['costo_unitario' => 'required|numeric|min:0|max:99999999.9999|decimal:0,4']);
         }
 
         if ($this->tipo == 'transferencia') {
-            $this->validate(['bodega_destino_id' => 'required|different:bodega_id']);
+            $this->validate(['bodega_destino_id' => ['required', 'integer', 'different:bodega_id', Rule::exists('bodegas', 'id')->where('activa', true)]]);
         }
 
         try {

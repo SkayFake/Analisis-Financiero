@@ -10,6 +10,8 @@ use App\Services\CreditoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Carbon\Carbon;
+use App\Support\DatosSalvador;
+use App\Support\ReglasFormulario;
 
 class CreditoController extends Controller
 {
@@ -20,6 +22,10 @@ class CreditoController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Credito::class);
+        $request->validate([
+            'buscar' => 'nullable|string|max:150',
+            'estado' => 'nullable|string|in:pendiente_aprobacion,aprobado,vigente,vencido,incobrable,cancelado,rechazado,refinanciado,embargado',
+        ]);
 
         $query = Credito::with(['cliente', 'venta', 'condicionCredito', 'vendedor']);
 
@@ -47,6 +53,7 @@ class CreditoController extends Controller
     public function create(Request $request)
     {
         Gate::authorize('create', Credito::class);
+        $request->validate(['venta_id' => 'nullable|integer|exists:ventas,id']);
 
         $clientes    = Cliente::activos()->orderBy('nombre')->get();
         $condiciones = CondicionCredito::activas()->get();
@@ -80,23 +87,20 @@ class CreditoController extends Controller
     public function store(Request $request)
     {
         Gate::authorize('create', Credito::class);
+        $request->merge(DatosSalvador::normalizar($request->all()));
 
         $validated = $request->validate([
-            'venta_id'              => 'required|exists:ventas,id',
-            'condicion_credito_id'  => 'required|exists:condiciones_credito,id',
-            'numero_cuotas'         => 'required|integer|min:1',
-            'fecha_primera_cuota'   => 'required|date|after_or_equal:today',
-            'vendedor_id'           => 'nullable|exists:vendedores,id',
-            'cartera_id'            => 'nullable|exists:carteras,id',
-            'politica_cobro_id'     => 'nullable|exists:politicas_cobro,id',
+            'venta_id'              => 'required|integer|exists:ventas,id',
+            'condicion_credito_id'  => 'required|integer|exists:condiciones_credito,id',
+            'numero_cuotas'         => 'required|integer|min:1|max:120',
+            'fecha_primera_cuota'   => 'required|date_format:Y-m-d|after_or_equal:today',
+            'vendedor_id'           => 'nullable|integer|exists:vendedores,id',
+            'cartera_id'            => 'nullable|integer|exists:carteras,id',
+            'politica_cobro_id'     => 'nullable|integer|exists:politicas_cobro,id',
             'dui_verificado'        => 'boolean',
             'referencia_verificada' => 'boolean',
-            'fiador_nombre'         => 'nullable|string|max:150',
-            'fiador_dui'            => 'nullable|string|max:20',
-            'fiador_telefono'       => 'nullable|string|max:20',
-            'fiador_direccion'      => 'nullable|string|max:250',
-            'observaciones'         => 'nullable|string',
-        ], [
+            'observaciones'         => 'nullable|string|max:2000',
+        ] + ReglasFormulario::fiador(), [
             'venta_id.required'              => 'Debe seleccionar la factura de origen del crédito.',
             'condicion_credito_id.required'  => 'Debe seleccionar las condiciones de crédito.',
             'numero_cuotas.required'         => 'Indique el número de cuotas.',
@@ -180,11 +184,11 @@ class CreditoController extends Controller
         Gate::authorize('processPayment', $credito);
 
         $validated = $request->validate([
-            'monto'         => 'required|numeric|min:0.01',
-            'forma_pago'    => 'required|in:efectivo,transferencia,cheque,tarjeta',
-            'fecha_pago'    => 'nullable|date',
+            'monto'         => 'required|numeric|min:0.01|max:999999999999.99|decimal:0,2',
+            'forma_pago'    => 'required|string|in:efectivo,transferencia,cheque,tarjeta',
+            'fecha_pago'    => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:'.($credito->fecha_aprobacion ?? $credito->fecha_solicitud)->toDateString(),
             'referencia'    => 'nullable|string|max:100',
-            'observaciones' => 'nullable|string',
+            'observaciones' => 'nullable|string|max:2000',
         ]);
 
         $validated['recibido_por'] = auth()->id();
@@ -207,7 +211,7 @@ class CreditoController extends Controller
         Gate::authorize('approve', $credito);
 
         $request->validate([
-            'motivo' => 'required|string|min:10',
+            'motivo' => 'required|string|min:10|max:2000',
         ], [
             'motivo.required' => 'Debe indicar el motivo de aprobación.',
             'motivo.min'      => 'El motivo debe tener al menos 10 caracteres.',
@@ -231,7 +235,7 @@ class CreditoController extends Controller
         Gate::authorize('reject', $credito);
 
         $request->validate([
-            'motivo' => 'required|string|min:10',
+            'motivo' => 'required|string|min:10|max:2000',
         ], [
             'motivo.required' => 'Debe indicar el motivo de rechazo.',
             'motivo.min'      => 'El motivo debe tener al menos 10 caracteres.',

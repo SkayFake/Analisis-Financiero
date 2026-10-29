@@ -26,25 +26,35 @@ class InventarioDashboard extends Component
         $this->resetPage();
     }
 
+    public function updated($property): void
+    {
+        if (in_array($property, ['buscar', 'bodega_id', 'mostrarAgotados'])) {
+            $this->validateOnly($property, [
+                'buscar' => 'nullable|string|max:150',
+                'bodega_id' => 'nullable|integer|exists:bodegas,id',
+                'mostrarAgotados' => 'required|boolean',
+            ]);
+        }
+    }
+
     // Reactividad: Si se recarga o un evento dice que se actualizó el stock
     protected $listeners = ['stockActualizado' => '$refresh'];
 
     public function render()
     {
+        $busqueda = is_string($this->buscar) ? mb_substr($this->buscar, 0, 150) : '';
         $query = Producto::with(['existencias.bodega', 'categoria', 'marca']);
 
-        if ($this->buscar) {
-            $query->where(function($q) {
-                $q->where('nombre', 'ilike', '%' . $this->buscar . '%')
-                  ->orWhere('codigo', 'ilike', '%' . $this->buscar . '%');
+        if ($busqueda !== '') {
+            $query->where(function($q) use ($busqueda) {
+                $q->where('nombre', 'ilike', '%' . $busqueda . '%')
+                  ->orWhere('codigo', 'ilike', '%' . $busqueda . '%');
             });
         }
 
-        if ($this->mostrarAgotados) {
+        if ($this->mostrarAgotados === true || $this->mostrarAgotados === '1' || $this->mostrarAgotados === 1) {
             // Filtrar productos donde el stock total es 0 o menor al mínimo
-            $query->whereHas('existencias', function($q) {
-                $q->havingRaw('SUM(cantidad) <= 0');
-            })->orWhereDoesntHave('existencias');
+            $query->whereRaw('COALESCE((SELECT SUM(cantidad) FROM existencias WHERE existencias.producto_id = productos.id), 0) <= 0');
         }
 
         $productos = $query->paginate(15);

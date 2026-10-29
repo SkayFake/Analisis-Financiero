@@ -284,11 +284,12 @@
             </div>
             <form wire:submit.prevent="save">
                 <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                    @include('components.errores-validacion')
                     
                     {{-- Campos comunes --}}
                     <div>
                         <label class="form-label">Nombre</label>
-                        <input type="text" wire:model="nombre" class="form-input" required>
+                        <input type="text" wire:model="nombre" class="form-input" required maxlength="255">
                         @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
 
@@ -312,7 +313,7 @@
                     @if($tab === 'unidades')
                         <div>
                             <label class="form-label">Abreviatura (Ej: u, kg, m)</label>
-                            <input type="text" wire:model="abreviatura" class="form-input" required>
+                            <input type="text" wire:model="abreviatura" class="form-input" required maxlength="10">
                             @error('abreviatura') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
                     @endif
@@ -320,16 +321,16 @@
                     @if($tab === 'proveedores')
                         <div>
                             <label class="form-label">NIT / Documento</label>
-                            <input type="text" wire:model="nit" class="form-input">
+                            <input type="text" wire:model="nit" class="form-input" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dígitos; las personas naturales también pueden utilizar el DUI homologado.">
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div>
                                 <label class="form-label">Teléfono</label>
-                                <input type="text" wire:model="telefono" class="form-input">
+                                <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                             </div>
                             <div>
                                 <label class="form-label">Días de Crédito</label>
-                                <input type="number" min="0" wire:model="dias_credito" class="form-input" required>
+                                <input type="number" min="0" wire:model="dias_credito" class="form-input" required max="3650" step="1">
                             </div>
                         </div>
                     @endif

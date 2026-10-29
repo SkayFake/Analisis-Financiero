@@ -18,8 +18,9 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'password' => ['required', 'string', 'max:4096'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
 
         $cuenta = 'login:cuenta:'.hash('sha256', Str::lower(trim($credentials['email'])));

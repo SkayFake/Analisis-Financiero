@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="title">Editar Cliente: {{ $cliente->nombre }}</x-slot>
+    @include('components.errores-validacion')
 
     <div class="page-header">
         <div class="page-header-left">
@@ -47,25 +48,29 @@
                     <div class="grid-2">
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Nombre Completo o Razón Social <span class="required">*</span></label>
-                            <input type="text" name="nombre" class="form-input @error('nombre') error @enderror" value="{{ old('nombre', $cliente->nombre) }}" required>
+                            <input type="text" name="nombre" class="form-input @error('nombre') error @enderror" value="{{ old('nombre', $cliente->nombre) }}" required maxlength="255">
                             @error('nombre') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         @if($cliente->tipo === 'natural')
                         <div class="form-group">
                             <label class="form-label">DUI</label>
-                            <input type="text" name="dui" class="form-input @error('dui') error @enderror" value="{{ old('dui', $cliente->dui) }}">
+                            <input type="text" name="dui" class="form-input @error('dui') error @enderror" value="{{ old('dui', $cliente->dui) }}" inputmode="numeric" maxlength="10" pattern="[0-9]{8}-?[0-9]" title="DUI de 9 dígitos con verificador correcto. Puede escribirlo con o sin guion.">
                             @error('dui') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                         @endif
 
                         <div class="form-group">
                             <label class="form-label">NIT</label>
-                            <input type="text" name="nit" class="form-input @error('nit') error @enderror" value="{{ old('nit', $cliente->nit) }}">
+                            <input type="text" name="nit" class="form-input @error('nit') error @enderror" value="{{ old('nit', $cliente->nit) }}" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dígitos; las personas naturales también pueden utilizar el DUI homologado.">
                             @error('nit') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
 
                         @if($cliente->tipo === 'natural')
+                        <div class="form-group">
+                            <label class="form-label">NRC</label>
+                            <input type="text" name="nrc" inputmode="numeric" maxlength="9" pattern="(?:[0-9]{1,8}|[0-9]{1,7}-[0-9])" class="form-input" value="{{ old('nrc', $cliente->nrc) }}">
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Estado Civil</label>
                             <select name="estado_civil" class="form-select">
@@ -80,7 +85,7 @@
 
                         <div class="form-group">
                             <label class="form-label">Lugar de Trabajo / Actividad</label>
-                            <input type="text" name="lugar_trabajo" class="form-input" value="{{ old('lugar_trabajo', $cliente->lugar_trabajo) }}">
+                            <input type="text" name="lugar_trabajo" class="form-input" value="{{ old('lugar_trabajo', $cliente->lugar_trabajo) }}" maxlength="255">
                         </div>
                         @endif
                     </div>
@@ -94,27 +99,27 @@
                     <div class="grid-2">
                         <div class="form-group">
                             <label class="form-label">Teléfono Fijo</label>
-                            <input type="text" name="telefono" class="form-input" value="{{ old('telefono', $cliente->telefono) }}">
+                            <input type="tel" name="telefono" class="form-input" value="{{ old('telefono', $cliente->telefono) }}" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Celular</label>
-                            <input type="text" name="celular" class="form-input" value="{{ old('celular', $cliente->celular) }}">
+                            <input type="tel" name="celular" class="form-input" value="{{ old('celular', $cliente->celular) }}" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[67][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Celular: comienza con 6 o 7.">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Correo Electrónico</label>
-                            <input type="email" name="email" class="form-input" value="{{ old('email', $cliente->email) }}">
+                            <input type="email" name="email" class="form-input" value="{{ old('email', $cliente->email) }}" maxlength="255">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Departamento</label>
-                            <input type="text" name="departamento" class="form-input" value="{{ old('departamento', $cliente->departamento) }}">
+                            <select name="departamento" class="form-select"><option value="">Seleccione...</option>@foreach(\App\Support\DatosSalvador::DEPARTAMENTOS as $departamento)<option value="{{ $departamento }}" @selected(old('departamento', $cliente->departamento) === $departamento)>{{ $departamento }}</option>@endforeach</select>
                         </div>
 
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Dirección Completa</label>
-                            <textarea name="direccion" class="form-input" rows="2">{{ old('direccion', $cliente->direccion) }}</textarea>
+                            <textarea name="direccion" class="form-input" rows="2" maxlength="2000">{{ old('direccion', $cliente->direccion) }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -127,12 +132,12 @@
                     <div class="grid-3">
                         <div class="form-group">
                             <label class="form-label">Ingresos Mensuales ($)</label>
-                            <input type="number" step="0.01" name="ingresos" class="form-input" value="{{ old('ingresos', $cliente->ingresos) }}">
+                            <input type="number" step="0.01" name="ingresos" class="form-input" value="{{ old('ingresos', $cliente->ingresos) }}" min="0" max="999999999999.99">
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Egresos Mensuales ($)</label>
-                            <input type="number" step="0.01" name="egresos" class="form-input" value="{{ old('egresos', $cliente->egresos) }}">
+                            <input type="number" step="0.01" name="egresos" class="form-input" value="{{ old('egresos', $cliente->egresos) }}" min="0" max="999999999999.99">
                         </div>
 
                         <div class="form-group">

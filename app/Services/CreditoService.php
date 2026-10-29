@@ -12,6 +12,9 @@ use App\Models\CondicionCredito;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use InvalidArgumentException;
+use App\Rules\{DuiSalvador, TelefonoSalvador};
+use App\Support\DatosSalvador;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Servicio de Crédito Comercial.
@@ -60,6 +63,9 @@ class CreditoService
         if ($numeroCuotas < 1) {
             throw new InvalidArgumentException("El número de cuotas debe ser al menos 1.");
         }
+        if ($numeroCuotas > 120) {
+            throw new InvalidArgumentException('El número de cuotas supera el límite de 120 de la aplicación.');
+        }
 
         if ($numeroCuotas > $condicion->plazo_maximo_cuotas) {
             throw new InvalidArgumentException("El número de cuotas ({$numeroCuotas}) supera el límite máximo permitido ({$condicion->plazo_maximo_cuotas}) para la condición '{$condicion->nombre}'.");
@@ -86,7 +92,7 @@ class CreditoService
         $tieneFiador = !empty($documentacion['tiene_fiador']);
 
         if ($condicion->requiere_dui) {
-            $duiPresente = !empty($cliente->dui) || !empty($documentacion['dui_cliente']);
+            $duiPresente = DatosSalvador::duiValido($cliente->dui);
             if (!$duiPresente || !$duiVerificado) {
                 throw new InvalidArgumentException("La condición de crédito exige presentar y verificar el DUI del cliente.");
             }
@@ -111,7 +117,7 @@ class CreditoService
 
         if ($condicion->requiere_dui) {
             $cliente = $credito->cliente;
-            $duiPresente = $cliente && !empty($cliente->dui);
+            $duiPresente = $cliente && DatosSalvador::duiValido($cliente->dui);
             if (!$duiPresente || !$credito->dui_verificado) {
                 return false;
             }
@@ -140,8 +146,8 @@ class CreditoService
 
         if ($condicion->requiere_dui) {
             $cliente = $credito->cliente;
-            if (!$cliente || empty($cliente->dui)) {
-                $faltantes[] = 'Número de DUI no registrado en el cliente.';
+            if (!$cliente || !DatosSalvador::duiValido($cliente->dui)) {
+                $faltantes[] = 'Número de DUI no registrado o con formato/verificador inválido.';
             }
             if (!$credito->dui_verificado) {
                 $faltantes[] = 'Verificación del documento DUI.';
@@ -166,6 +172,16 @@ class CreditoService
      */
     public function crearCreditoDesdeVenta(Venta $venta, array $condiciones): Credito
     {
+        $condiciones = DatosSalvador::normalizar($condiciones);
+        Validator::make($condiciones, [
+            'fiador' => 'nullable|array:nombre,dui,telefono,direccion,observaciones',
+            'fiador.nombre' => 'required_with:fiador|string|max:150|regex:/[\p{L}]/u',
+            'fiador.dui' => ['bail', 'nullable', 'string', new DuiSalvador],
+            'fiador.telefono' => ['bail', 'nullable', 'string', new TelefonoSalvador],
+            'fiador.direccion' => 'nullable|string|max:250',
+            'fiador.observaciones' => 'nullable|string|max:2000',
+            'fiadores' => 'prohibited',
+        ])->validate();
         return DB::transaction(function () use ($venta, $condiciones) {
             // Bloqueo pesimista para evitar carreras y créditos duplicados
             $ventaLocked = Venta::where('id', $venta->id)->lockForUpdate()->firstOrFail();

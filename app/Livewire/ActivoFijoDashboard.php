@@ -66,13 +66,19 @@ class ActivoFijoDashboard extends Component
 
     public function registrarActivo()
     {
+        if (!$this->form_es_usado) {
+            $this->form_anios_uso = 0;
+        }
         $this->validate([
-            'form_unidad_id' => 'required',
-            'form_categoria_id' => 'required',
-            'form_nombre' => 'required',
-            'form_fecha_adquisicion' => 'required|date',
-            'form_valor_adquisicion' => 'required|numeric|min:1',
-            'form_anios_uso' => 'required_if:form_es_usado,true,1,"1"'
+            'form_unidad_id' => 'required|integer|exists:unidades,id',
+            'form_categoria_id' => 'required|integer|exists:categoria_activos,id',
+            'form_nombre' => 'required|string|max:255|regex:/[\p{L}\p{N}]/u',
+            'form_fecha_adquisicion' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'form_valor_adquisicion' => 'required|numeric|min:1|max:9999999999.99|decimal:0,2',
+            'form_valor_residual' => 'required|numeric|min:0|lte:form_valor_adquisicion|decimal:0,2',
+            'form_es_usado' => 'required|boolean',
+            'form_maquinaria_importada' => 'required|boolean',
+            'form_anios_uso' => 'required|integer|max:150|min:'.($this->form_es_usado ? '1' : '0'),
         ]);
 
         try {
@@ -118,6 +124,11 @@ class ActivoFijoDashboard extends Component
 
     public function confirmarBaja()
     {
+        $this->validate([
+            'activoSeleccionadoId' => 'required|integer|exists:activos_fijos,id',
+            'baja_motivo' => 'required|in:vendido,donado,botado',
+            'baja_detalles' => 'nullable|string|max:2000',
+        ]);
         try {
             $service = app(ActivoFijoService::class);
             $service->desincorporarActivo($this->activoSeleccionadoId, $this->baja_motivo, $this->baja_detalles);
