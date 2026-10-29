@@ -2,8 +2,8 @@
     {{-- Encabezado de Página --}}
     <div class="page-header">
         <div class="page-header-left">
-            <h1 class="page-title">Punto de Facturación Electrónica (DTE)</h1>
-            <p class="page-subtitle">Emisión y firma digital de documentos tributarios autorizados por el Ministerio de Hacienda (El Salvador).</p>
+            <h1 class="page-title">{{ config('erp.dte.enabled') ? 'Punto de Facturación Electrónica (DTE)' : 'Punto de Venta' }}</h1>
+            <p class="page-subtitle">{{ config('erp.dte.enabled') ? 'Gestión de documentos electrónicos y su estado de transmisión.' : 'Proyecto académico: ventas y créditos con comprobantes locales, sin conexión a Hacienda.' }}</p>
         </div>
         <div class="page-actions">
             @if(count($detalles) > 0)
@@ -28,6 +28,16 @@
     </div>
 
     {{-- Notificaciones / Alertas --}}
+    @if($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <strong>Revise los datos de la venta:</strong>
+            <ul>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     @if(session('error'))
         <div class="alert alert-danger" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--danger-50); border: 1px solid var(--danger-200); color: var(--danger-700); padding: 1rem 1.25rem; border-radius: var(--radius-md);">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -71,14 +81,14 @@
         {{-- DTEs Transmitidos / Procesados --}}
         <div class="stat-card" style="--stat-color: var(--success-600); --stat-bg: var(--success-50);">
             <div class="stat-card-top">
-                <div class="stat-card-label">DTEs Transmitidos MH</div>
+                <div class="stat-card-label">{{ config('erp.dte.enabled') ? 'DTEs Transmitidos MH' : 'Documentos Locales' }}</div>
                 <div class="stat-card-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 6L9 17l-5-5"/>
                     </svg>
                 </div>
             </div>
-            <div class="stat-card-value">{{ $docsTransmitidos }}</div>
+                <div class="stat-card-value">{{ config('erp.dte.enabled') ? $docsTransmitidos : $docsLocales }}</div>
             <div class="stat-card-change up">
                 Sello de recepción OK
             </div>
@@ -279,6 +289,7 @@
                                             <span style="color: var(--neutral-400); margin-right: 0.25rem; font-size: 0.875rem;">$</span>
                                             <input type="number" 
                                                    wire:model.live.debounce.300ms="detalles.{{$index}}.precio_unitario" 
+                                                   @readonly(!auth()->user()->hasRole('super-admin') && !auth()->user()->can('facturacion.modificar_precio'))
                                                    min="0" 
                                                    step="0.01" 
                                                    class="form-input" 
@@ -352,7 +363,7 @@
                         <path d="M16 17H8"/>
                         <path d="M10 9H8"/>
                     </svg>
-                    <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--neutral-900);">Datos del DTE</h3>
+                    <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--neutral-900);">{{ config('erp.dte.enabled') ? 'Datos del DTE' : 'Datos del comprobante' }}</h3>
                 </div>
 
                 {{-- Tipo de Documento Tributario --}}
@@ -578,7 +589,7 @@
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
                             </svg>
-                            <span>Emitir Factura DTE</span>
+                            <span>{{ config('erp.dte.enabled') ? 'Emitir Factura DTE' : 'Registrar venta y generar comprobante' }}</span>
                         </span>
 
                         <span wire:loading.inline-flex wire:target="facturar" style="align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap;">
@@ -586,7 +597,7 @@
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-dasharray="32" stroke-linecap="round" fill="none" style="opacity: 0.3;"></circle>
                                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"></path>
                             </svg>
-                            <span>Transmitiendo DTE...</span>
+                            <span>{{ config('erp.dte.enabled') ? 'Transmitiendo DTE...' : 'Registrando venta...' }}</span>
                         </span>
                     </button>
 

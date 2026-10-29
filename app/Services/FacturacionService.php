@@ -5,9 +5,15 @@ namespace App\Services;
 use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\LoteContingencia;
+use App\Models\Producto;
+use App\Models\User;
 use App\Jobs\TransmitirDteContingencia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use App\Exceptions\DteConfigurationException;
 use InvalidArgumentException;
 use Exception;
 
@@ -36,7 +42,38 @@ class FacturacionService
      */
     public function procesarVenta(array $datosVenta, array $detalles, $usuarioId)
     {
+        if (isset($datosVenta['condicion_operacion']) && is_scalar($datosVenta['condicion_operacion'])) {
+            $datosVenta['condicion_operacion'] = (string) $datosVenta['condicion_operacion'];
+        }
+        Validator::make(array_merge($datosVenta, ['detalles' => $detalles]), [
+            'tipo_documento' => 'required|string|size:2|in:01,03,11,05,06',
+            'condicion_operacion' => 'required|string|in:1,2',
+            'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
+            'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
+            'detalles' => 'required|array|min:1|max:100',
+            'detalles.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)],
+            'detalles.*.cantidad' => 'required|numeric|min:0.01|max:999999.9999|decimal:0,4',
+            'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
+        ])->validate();
+
         return DB::transaction(function () use ($datosVenta, $detalles, $usuarioId) {
+            $usuario = User::findOrFail($usuarioId);
+            $productos = Producto::whereIn('id', array_column($detalles, 'producto_id'))->sharedLock()->get()->keyBy('id');
+            $modificaPrecio = $usuario->hasRole('super-admin') || $usuario->can('facturacion.modificar_precio');
+            $total = 0;
+            foreach ($detalles as $i => $detalle) {
+                $producto = $productos->get($detalle['producto_id']);
+                if (!$producto || !$producto->activo) {
+                    throw ValidationException::withMessages(["detalles.{$i}.producto_id" => 'El producto no está habilitado.']);
+                }
+                if (!$modificaPrecio && (int) round((float) $detalle['precio_unitario'] * 100) !== (int) round((float) $producto->precio_venta * 100)) {
+                    throw ValidationException::withMessages(["detalles.{$i}.precio_unitario" => 'No tiene permiso para modificar el precio del catálogo.']);
+                }
+                $total += round($detalle['cantidad'] * $detalle['precio_unitario'], 2);
+            }
+            if ($total <= 0 || $total * 1.13 > 9999999999.99) {
+                throw ValidationException::withMessages(['detalles' => 'El total de la venta debe ser positivo y estar dentro del límite admitido.']);
+            }
             $condicionOperacion = (string) ($datosVenta['condicion_operacion'] ?? '1');
 
             // Si es venta al crédito, validar previamente que vengan los datos requeridos
@@ -73,7 +110,7 @@ class FacturacionService
             $bodegaId = $datosVenta['bodega_id'] ?? 1;
 
             foreach ($detalles as $index => $det) {
-                $montoGravado = $det['cantidad'] * $det['precio_unitario'];
+                $montoGravado = round($det['cantidad'] * $det['precio_unitario'], 2);
                 $totales['gravado'] += $montoGravado;
 
                 DetalleVenta::create([
@@ -119,8 +156,15 @@ class FacturacionService
                 $this->creditoService->crearCreditoDesdeVenta($venta, $condicionesCredito);
             }
 
-            // 4. Firmar y Transmitir si no es Ticket interno
-            if (in_array($venta->tipo_documento, ['01', '03', '05', '06'])) {
+            // Las ventas y créditos funcionan sin servicios fiscales en el proyecto académico.
+            if (!config('erp.dte.enabled') || $venta->tipo_documento === '11') {
+                $venta->update([
+                    'estado_dte' => 'local',
+                    'sello_recepcion' => null,
+                    'json_firmado' => null,
+                    'mensaje_mh' => 'Documento local. No transmitido a Hacienda.',
+                ]);
+            } elseif (in_array($venta->tipo_documento, ['01', '03', '05', '06'])) {
                 $this->firmarYTransmitir($venta);
             }
 
@@ -158,6 +202,8 @@ class FacturacionService
                 $venta->mensaje_mh = json_encode($respuestaMH);
             }
 
+        } catch (DteConfigurationException $e) {
+            throw $e;
         } catch (Exception $e) {
             // ENTRAR EN CONTINGENCIA SI FALLA LA CONEXIÓN O EL FIRMADOR
             $venta->estado_dte = 'contingencia';

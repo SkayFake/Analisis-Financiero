@@ -197,7 +197,7 @@
     {{-- Historial de Créditos --}}
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Historial de Créditos y Préstamos</h3>
+            <h3 class="card-title">Historial de Créditos Comerciales</h3>
             <div style="font-size: 0.8125rem; color: var(--neutral-500);">
                 Total: <strong>{{ count($cliente->creditos) }}</strong> operaciones
             </div>
@@ -208,11 +208,11 @@
                     <thead>
                         <tr>
                             <th>Número de Crédito</th>
-                            <th>Producto Financiero</th>
+                            <th>Condición de Crédito</th>
                             <th class="text-right">Monto Original</th>
                             <th class="text-right">Saldo Actual</th>
                             <th>Estado</th>
-                            <th>Fecha Desembolso</th>
+                            <th>Fecha Solicitud</th>
                             <th class="text-center" style="width: 120px; text-align: center;">Acción</th>
                         </tr>
                     </thead>
@@ -225,8 +225,8 @@
                                 </span>
                             </td>
                             <td>
-                                <div style="font-weight: 600; color: var(--neutral-900);">{{ $credito->productoCredito->nombre }}</div>
-                                <div style="font-size: 0.75rem; color: var(--neutral-500);">Tasa: {{ number_format($credito->tasa_interes, 2) }}% anual</div>
+                                <div style="font-weight: 600; color: var(--neutral-900);">{{ $credito->condicionCredito?->nombre ?? 'Sin condición asignada' }}</div>
+                                <div style="font-size: 0.75rem; color: var(--neutral-500);">Tasa: {{ number_format($credito->tasa_interes_anual, 2) }}% anual</div>
                             </td>
                             <td style="text-align: right; font-weight: 500;">${{ number_format($credito->monto_original, 2) }}</td>
                             <td style="text-align: right; font-weight: 700; color: var(--primary-700);">${{ number_format($credito->saldo_actual, 2) }}</td>
@@ -244,7 +244,7 @@
                                     {{ strtoupper($credito->estado) }}
                                 </span>
                             </td>
-                            <td>{{ $credito->fecha_desembolso?->format('d/m/Y') ?? 'N/D' }}</td>
+                            <td>{{ $credito->fecha_solicitud?->format('d/m/Y') ?? 'N/D' }}</td>
                             <td style="text-align: center;">
                                 <a href="{{ route('creditos.show', $credito) }}" class="btn btn-sm btn-secondary">
                                     Ver Detalle

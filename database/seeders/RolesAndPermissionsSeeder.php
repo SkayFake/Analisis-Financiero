@@ -64,6 +64,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $activoPermisos, $sistemaPermisos
         );
 
+        $todosPermisos[] = 'facturacion.modificar_precio';
+
         foreach ($todosPermisos as $permiso) {
             Permission::create(['name' => $permiso]);
         }

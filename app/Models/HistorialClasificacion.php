@@ -12,10 +12,13 @@ class HistorialClasificacion extends Model
         'cliente_id', 'credito_id', 'clasificacion_anterior',
         'clasificacion_nueva', 'motivo', 'dias_mora',
         'reactivacion', 'realizado_por',
+        'fecha', 'saldo_momento', 'registrado_por', 'observaciones',
     ];
 
     protected $casts = [
         'reactivacion' => 'boolean',
+        'fecha' => 'date',
+        'saldo_momento' => 'decimal:2',
     ];
 
     public function cliente()

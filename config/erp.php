@@ -62,6 +62,7 @@ return [
     */
 
     'dte' => [
+        'enabled' => env('ERP_DTE_ENABLED', false),
         'api_url' => env('DTE_API_URL', 'https://apidte.dfrn.gob.sv'),
         'firmador_url' => env('DTE_FIRMADOR_URL', 'http://localhost:8113'),
         'nit_emisor' => env('DTE_NIT_EMISOR', ''),

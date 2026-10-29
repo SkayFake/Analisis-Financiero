@@ -48,8 +48,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/inventario', \App\Livewire\InventarioDashboard::class)->name('inventario.dashboard');
 
     // Facturación DTE
-    Route::get('/facturacion/pos', \App\Livewire\PuntoVenta::class)->name('facturacion.pos');
+    Route::get('/facturacion/pos', \App\Livewire\PuntoVenta::class)->middleware('can:viewAny,App\Models\Venta')->name('facturacion.pos');
     Route::get('/facturacion/{venta}/pdf', function (\App\Models\Venta $venta) {
+        \Illuminate\Support\Facades\Gate::authorize('view', $venta);
         $venta->load(['cliente', 'detalles.producto']);
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('facturacion.pdf', compact('venta'));
         // Si es ticket, papel continuo de 80mm

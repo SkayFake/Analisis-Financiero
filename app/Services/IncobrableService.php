@@ -93,9 +93,8 @@ class IncobrableService
                 $interesesPendientes = $credito->cuotas()
                     ->pendientes()
                     ->sum('interes');
-                $comisionesPendientes = $credito->cuotas()
-                    ->pendientes()
-                    ->sum('comision');
+                // El esquema comercial no tiene comisiones; conservar la clave del resumen.
+                $comisionesPendientes = 0;
 
                 $resumen['creditos_reactivados']++;
                 $resumen['total_intereses_recalculados'] += $interesesPendientes + $mora['total_mora'];
@@ -167,6 +166,9 @@ class IncobrableService
             'dias_mora' => $diasMora,
             'reactivacion' => $reactivacion,
             'realizado_por' => $userId,
+            'registrado_por' => $userId,
+            'fecha' => now()->toDateString(),
+            'saldo_momento' => $cliente->creditos()->activos()->sum('saldo_actual'),
         ]);
 
         $cliente->update(['clasificacion_cobro' => $nuevaClasificacion]);

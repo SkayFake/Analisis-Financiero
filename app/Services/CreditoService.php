@@ -459,6 +459,8 @@ class CreditoService
                 throw new InvalidArgumentException("El monto a pagar debe ser mayor a 0.");
             }
 
+            app(ConciliacionPagosService::class)->conciliar($credito);
+
             // Obtener todas las cuotas pendientes ordenadas por fecha de vencimiento y número
             $cuotas = Cuota::where('credito_id', $credito->id)
                 ->whereIn('estado', ['pendiente', 'vencida', 'parcial'])

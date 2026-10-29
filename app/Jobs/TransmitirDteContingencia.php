@@ -30,6 +30,9 @@ class TransmitirDteContingencia implements ShouldQueue
      */
     public function handle(DteApiService $dteApiService): void
     {
+        if (!config('erp.dte.enabled')) {
+            return;
+        }
         $venta = Venta::find($this->ventaId);
 
         if (!$venta || $venta->estado_dte !== 'contingencia') {

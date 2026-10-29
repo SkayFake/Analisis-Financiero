@@ -40,6 +40,8 @@ class CreditoComercialFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // This suite explicitly exercises the future fiscal path with mocked services.
+        config(['erp.dte.enabled' => true]);
 
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 

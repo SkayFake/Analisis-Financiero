@@ -10,6 +10,9 @@ use App\Models\Venta;
 use App\Models\CondicionCredito;
 use App\Services\FacturacionService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 class PuntoVenta extends Component
@@ -45,6 +48,7 @@ class PuntoVenta extends Component
 
     public function mount()
     {
+        Gate::authorize('viewAny', Venta::class);
         $primeraBodega = Bodega::where('activa', true)->first();
         if ($primeraBodega) {
             $this->bodega_id = $primeraBodega->id;
@@ -201,11 +205,24 @@ class PuntoVenta extends Component
 
     public function facturar()
     {
+        Gate::authorize('create', Venta::class);
+        // Livewire properties can arrive as numbers; use the same representation in every branch.
+        if (is_scalar($this->condicion_operacion)) {
+            $this->condicion_operacion = (string) $this->condicion_operacion;
+        }
         $rules = [
-            'tipo_documento'      => 'required|in:01,03,11,05,06',
-            'condicion_operacion' => 'required|in:1,2',
+            'tipo_documento'      => 'required|string|size:2|in:01,03,11,05,06',
+            'condicion_operacion' => 'required|string|in:1,2',
             'detalles'            => 'required|array|min:1',
-            'cliente_id'          => 'required_if:tipo_documento,03|required_if:condicion_operacion,2',
+            'detalles.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)],
+            'detalles.*.cantidad' => 'required|numeric|min:0.01|max:999999.9999|decimal:0,4',
+            'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
+            'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
+            'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
+            'fiador_nombre' => 'nullable|string|max:150',
+            'fiador_dui' => 'nullable|string|max:20',
+            'fiador_telefono' => 'nullable|string|max:20',
+            'fiador_direccion' => 'nullable|string|max:250',
         ];
 
         $messages = [
@@ -216,10 +233,7 @@ class PuntoVenta extends Component
 
         if ($this->condicion_operacion === '2') {
             // Comprobar autorización para crear créditos si es venta al crédito
-            $user = Auth::user();
-            if ($user && !$user->can('creditos.create') && !$user->hasRole('super-admin')) {
-                abort(403, 'No tiene permisos para autorizar o emitir ventas al crédito comercial.');
-            }
+            Gate::authorize('create', \App\Models\Credito::class);
 
             $rules['condicion_credito_id'] = 'required|exists:condiciones_credito,id';
             $rules['numero_cuotas']        = 'required|integer|min:1';
@@ -254,7 +268,7 @@ class PuntoVenta extends Component
 
         try {
             $service = app(FacturacionService::class);
-            $usuarioId = Auth::id() ?? 1;
+            $usuarioId = Auth::id();
 
             $condicionesCredito = [];
             if ($this->condicion_operacion === '2') {
@@ -289,7 +303,7 @@ class PuntoVenta extends Component
             $this->detalles = [];
             $this->calcularTotales();
 
-            $msg = "¡Documento DTE {$venta->numero_control} emitido con éxito!";
+            $msg = "Venta {$venta->numero_control} registrada. Estado del documento: ".strtoupper($venta->estado_dte).'.';
             if ($venta->credito) {
                 $msg .= " Crédito asociado: {$venta->credito->numero} (" . strtoupper($venta->credito->estado) . ").";
             }
@@ -298,6 +312,8 @@ class PuntoVenta extends Component
             
             return redirect()->route('facturacion.pdf', $venta->id);
             
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             session()->flash('error', 'Error al procesar la venta: ' . $e->getMessage());
         }
@@ -310,6 +326,7 @@ class PuntoVenta extends Component
         $docsHoy = $ventasHoy->count();
         $docsContingencia = $ventasHoy->where('estado_dte', 'contingencia')->count();
         $docsTransmitidos = $ventasHoy->where('estado_dte', 'procesado')->count();
+        $docsLocales = $ventasHoy->where('estado_dte', 'local')->count();
 
         $clienteSeleccionado = $this->cliente_id ? Cliente::find($this->cliente_id) : null;
 
@@ -318,6 +335,7 @@ class PuntoVenta extends Component
             'docsHoy' => $docsHoy,
             'docsContingencia' => $docsContingencia,
             'docsTransmitidos' => $docsTransmitidos,
+            'docsLocales' => $docsLocales,
             'clienteSeleccionado' => $clienteSeleccionado,
             'condiciones' => $this->condicionesCredito,
             'condicionSeleccionada' => $this->condicionSeleccionada,

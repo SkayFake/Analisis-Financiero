@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Documento Tributario - {{ $venta->numero_control }}</title>
+    <title>Documento {{ $venta->estado_dte === 'local' ? 'Local' : 'Tributario' }} - {{ $venta->numero_control }}</title>
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; margin: 0; padding: 20px; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -26,6 +26,12 @@
     </style>
 </head>
 <body>
+
+    @if($venta->estado_dte === 'local')
+        <p style="text-align: center; font-weight: bold;">DOCUMENTO LOCAL — PROYECTO ACADÉMICO. Sin autorización fiscal.</p>
+    @elseif($venta->estado_dte !== 'procesado')
+        <p style="text-align: center; font-weight: bold;">Estado: {{ strtoupper($venta->estado_dte) }}. Sin autorización fiscal confirmada.</p>
+    @endif
 
     <div class="header">
         <h1>Mi Empresa S.A. de C.V.</h1>
@@ -98,7 +104,11 @@
     </table>
 
     <div class="footer">
-        <p>Sello de Recepción MH: {{ $venta->sello_recepcion ?? 'PENDIENTE (Contingencia/Interno)' }}</p>
+        @if($venta->estado_dte === 'local')
+            <p>Registro interno. No transmitido a Hacienda.</p>
+        @else
+            <p>Sello de Recepción MH: {{ $venta->sello_recepcion ?? 'PENDIENTE (Contingencia/Interno)' }}</p>
+        @endif
         <p>¡Gracias por su compra!</p>
     </div>
 

@@ -95,7 +95,7 @@ class ClienteController extends Controller
         $cliente->load([
             'datosJuridicos', 'zona', 'vendedor', 'cartera',
             'creditos' => fn($q) => $q->orderByDesc('created_at')->limit(10),
-            'creditos.productoCredito',
+            'creditos.condicionCredito',
             'historialClasificaciones' => fn($q) => $q->orderByDesc('created_at')->limit(10),
         ]);
 
