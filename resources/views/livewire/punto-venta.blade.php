@@ -385,6 +385,108 @@
                     </select>
                 </div>
 
+                {{-- Condiciones y Parámetros del Crédito Comercial --}}
+                @if($condicion_operacion === '2')
+                <div style="background: var(--primary-50); border: 1px solid var(--primary-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-700);">
+                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                            <line x1="2" y1="10" x2="22" y2="10"></line>
+                        </svg>
+                        <strong style="color: var(--primary-900); font-size: 0.875rem;">Condiciones del Crédito Comercial</strong>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label class="form-label" style="font-size: 0.8125rem;">Condición de Crédito <span class="required">*</span></label>
+                        <select wire:model.live="condicion_credito_id" class="form-select" style="font-size: 0.875rem;">
+                            <option value="">Seleccione una condición...</option>
+                            @foreach($condiciones as $cond)
+                                <option value="{{ $cond->id }}">
+                                    {{ $cond->nombre }} ({{ $cond->frecuencia_label }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('condicion_credito_id') <span class="form-error">{{ $message }}</span> @enderror
+                    </div>
+
+                    @if($condicionSeleccionada)
+                        {{-- Resumen de tasas, frecuencia, requisitos y límites --}}
+                        <div style="background: #ffffff; border: 1px solid var(--primary-100); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; color: var(--neutral-700);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>Frecuencia:</span>
+                                <strong>{{ ucfirst($condicionSeleccionada->frecuencia_pago) }}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>Tasa Interés Anual:</span>
+                                <strong>{{ number_format($condicionSeleccionada->tasa_interes_anual, 2) }}%</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>Tasa Mora Mensual:</span>
+                                <strong>{{ number_format($condicionSeleccionada->tasa_mora_mensual, 2) }}% ({{ $condicionSeleccionada->dias_gracia }} días gracia)</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>Plazo Máx. Cuotas:</span>
+                                <strong>Hasta {{ $condicionSeleccionada->plazo_maximo_cuotas }} cuotas</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span>Límite Auto-Aprobación:</span>
+                                <strong>${{ number_format($condicionSeleccionada->monto_auto_aprobado, 2) }}</strong>
+                            </div>
+                            <div style="border-top: 1px dashed var(--neutral-200); margin-top: 0.4rem; padding-top: 0.4rem;">
+                                <strong>Requisitos:</strong>
+                                @if($condicionSeleccionada->requiere_dui) <span class="badge badge-warning" style="font-size: 0.65rem;">DUI Requerido</span> @endif
+                                @if($condicionSeleccionada->requiere_fiador) <span class="badge badge-danger" style="font-size: 0.65rem;">Fiador Requerido</span> @endif
+                                @if(!$condicionSeleccionada->requiere_dui && !$condicionSeleccionada->requiere_fiador) <span class="badge badge-success" style="font-size: 0.65rem;">Sin requisitos adicionales</span> @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.75rem;">No. Cuotas <span class="required">*</span></label>
+                            <input type="number" wire:model.live="numero_cuotas" min="1" max="{{ $condicionSeleccionada?->plazo_maximo_cuotas ?? 120 }}" class="form-input" style="padding: 0.35rem 0.5rem; font-size: 0.875rem;">
+                            @error('numero_cuotas') <span class="form-error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.75rem;">1ª Fecha Pago <span class="required">*</span></label>
+                            <input type="date" wire:model.live="fecha_primera_cuota" class="form-input" style="padding: 0.35rem 0.5rem; font-size: 0.875rem;">
+                            @error('fecha_primera_cuota') <span class="form-error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Documentación y Verificaciones --}}
+                    <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" wire:model.live="dui_verificado">
+                            <span>DUI del cliente presentado y verificado</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" wire:model.live="referencia_verificada">
+                            <span>Referencias comerciales verificadas</span>
+                        </label>
+                    </div>
+
+                    {{-- Fiador (si la condición lo pide o si se desea ingresar) --}}
+                    @if($condicionSeleccionada?->requiere_fiador)
+                        <div style="border-top: 1px solid var(--primary-200); padding-top: 0.5rem; margin-top: 0.5rem;">
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--danger-700); margin-bottom: 0.35rem;">
+                                Datos del Fiador (Requerido para aprobar)
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0.35rem;">
+                                <input type="text" wire:model.live="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.35rem;">
+                                <input type="text" wire:model.live="fiador_dui" class="form-input" placeholder="DUI fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                                <input type="text" wire:model.live="fiador_telefono" class="form-input" placeholder="Teléfono" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="text" wire:model.live="fiador_direccion" class="form-input" placeholder="Dirección del fiador" style="font-size: 0.8125rem; padding: 0.3rem 0.5rem;">
+                            </div>
+                        </div>
+                    @endif
+                </div>
+                @endif
+
                 {{-- Receptor / Cliente --}}
                 <div class="form-group">
                     <label class="form-label">

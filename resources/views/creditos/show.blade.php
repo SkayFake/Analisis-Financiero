@@ -38,20 +38,22 @@
             </div>
         </div>
         <div class="page-actions" style="display: flex; gap: 0.75rem;">
-            @if(in_array($credito->estado, ['vigente', 'vencido']))
+            @can('processPayment', $credito)
                 <button onclick="document.getElementById('modalPago').style.display='flex'" class="btn btn-success">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Registrar Pago
                 </button>
-            @endif
-            @if($credito->estado === 'pendiente_aprobacion')
+            @endcan
+            @can('approve', $credito)
                 <button onclick="document.getElementById('modalAprobar').style.display='flex'" class="btn btn-primary">
                     ✓ Aprobar Crédito
                 </button>
+            @endcan
+            @can('reject', $credito)
                 <button onclick="document.getElementById('modalRechazar').style.display='flex'" class="btn btn-secondary" style="color: var(--danger-600);">
                     ✕ Rechazar
                 </button>
-            @endif
+            @endcan
         </div>
     </div>
 
@@ -59,9 +61,21 @@
     @if($credito->estado === 'pendiente_aprobacion')
     <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
         <strong>⚠ Este crédito requiere aprobación manual.</strong>
-        El cliente no cumple los criterios de aprobación automática
-        (historial de compras insuficiente o monto supera el límite auto-aprobado).
-        Revisa la documentación del cliente antes de aprobar.
+        El cliente no cumple los criterios de aprobación automática o la documentación está en revisión.
+        @if(!empty($requisitosFaltantes))
+            <div style="margin-top: 0.5rem; font-size: 0.875rem;">
+                <strong>Requisitos pendientes antes de poder aprobar:</strong>
+                <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0;">
+                    @foreach($requisitosFaltantes as $req)
+                        <li style="color: var(--danger-700);">{{ $req }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @else
+            <div style="margin-top: 0.25rem; font-size: 0.875rem; color: var(--success-700);">
+                ✓ Todos los requisitos documentales exigidos se encuentran cumplidos.
+            </div>
+        @endif
     </div>
     @endif
 
@@ -294,6 +308,7 @@
                                 <th class="text-right">Mora</th>
                                 <th class="text-right">Total</th>
                                 <th class="text-right">Saldo Después</th>
+                                <th>Aplicación Cuotas</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -307,10 +322,22 @@
                                 <td style="text-align: right; color: var(--danger-600);">${{ number_format($pago->pago_mora, 2) }}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--success-600);">${{ number_format($pago->monto_total, 2) }}</td>
                                 <td style="text-align: right; color: var(--neutral-600);">${{ number_format($pago->saldo_despues, 2) }}</td>
+                                <td style="font-size: 0.75rem;">
+                                    @if($pago->aplicaciones->count() > 0)
+                                        @foreach($pago->aplicaciones as $apl)
+                                            <div>
+                                                Cuota #{{ $apl->cuota?->numero_cuota }}: ${{ number_format($apl->monto_total, 2) }}
+                                                (Cap: ${{ number_format($apl->abono_capital, 2) }}, Int: ${{ number_format($apl->pago_interes, 2) }}, Mora: ${{ number_format($apl->pago_mora, 2) }})
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <span>Cuota #{{ $pago->cuota?->numero_cuota ?? '1' }}</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8">
+                                <td colspan="9">
                                     <div class="empty-state" style="padding: 1.5rem;">
                                         <p class="empty-state-text" style="margin-bottom: 0;">No se han registrado pagos.</p>
                                     </div>

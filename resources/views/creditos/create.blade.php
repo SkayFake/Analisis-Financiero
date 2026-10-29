@@ -232,6 +232,25 @@
                             </div>
                         </div>
 
+                        {{-- Fiador (opcional o requerido según condición) --}}
+                        <div class="form-group" style="grid-column: span 2; background: var(--neutral-50); border: 1px solid var(--neutral-200); padding: 1rem; border-radius: var(--radius-md);">
+                            <label class="form-label" style="font-weight: 700; color: var(--neutral-800);">Información del Fiador (si aplica)</label>
+                            <div class="grid-2" style="margin-top: 0.5rem;">
+                                <div>
+                                    <input type="text" name="fiador_nombre" class="form-input" placeholder="Nombre completo del fiador" value="{{ old('fiador_nombre') }}">
+                                </div>
+                                <div>
+                                    <input type="text" name="fiador_dui" class="form-input" placeholder="DUI del fiador" value="{{ old('fiador_dui') }}">
+                                </div>
+                                <div>
+                                    <input type="text" name="fiador_telefono" class="form-input" placeholder="Teléfono" value="{{ old('fiador_telefono') }}">
+                                </div>
+                                <div>
+                                    <input type="text" name="fiador_direccion" class="form-input" placeholder="Dirección" value="{{ old('fiador_direccion') }}">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Observaciones</label>
                             <textarea name="observaciones" class="form-input" rows="2"

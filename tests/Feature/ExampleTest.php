@@ -14,6 +14,9 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('login'));
+
+        $loginResponse = $this->get(route('login'));
+        $loginResponse->assertStatus(200);
     }
 }

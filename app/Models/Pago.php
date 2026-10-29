@@ -33,6 +33,18 @@ class Pago extends Model
         return $this->belongsTo(Cuota::class);
     }
 
+    public function aplicaciones()
+    {
+        return $this->hasMany(PagoCuota::class);
+    }
+
+    public function cuotasAfectadas()
+    {
+        return $this->belongsToMany(Cuota::class, 'pago_cuotas')
+            ->withPivot(['monto_total', 'abono_capital', 'pago_interes', 'pago_mora'])
+            ->withTimestamps();
+    }
+
     public function recibidoPor()
     {
         return $this->belongsTo(User::class, 'recibido_por');

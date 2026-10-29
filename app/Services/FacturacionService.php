@@ -8,6 +8,7 @@ use App\Models\LoteContingencia;
 use App\Jobs\TransmitirDteContingencia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Exception;
 
 class FacturacionService
@@ -30,12 +31,26 @@ class FacturacionService
     }
 
     /**
-     * Procesa la venta, rebaja inventario, firma y transmite al MH.
+     * Procesa la venta, rebaja inventario, genera crédito comercial si aplica, firma y transmite al MH.
+     * Garantiza que si falla una operación local requerida (venta, inventario o crédito), se reviertan los cambios.
      */
     public function procesarVenta(array $datosVenta, array $detalles, $usuarioId)
     {
         return DB::transaction(function () use ($datosVenta, $detalles, $usuarioId) {
-            
+            $condicionOperacion = (string) ($datosVenta['condicion_operacion'] ?? '1');
+
+            // Si es venta al crédito, validar previamente que vengan los datos requeridos
+            if ($condicionOperacion === '2') {
+                if (empty($datosVenta['cliente_id'])) {
+                    throw new InvalidArgumentException("El cliente es obligatorio para ventas al crédito comercial.");
+                }
+
+                $condicionesCredito = $datosVenta['condiciones_credito'] ?? [];
+                if (empty($condicionesCredito['condicion_credito_id'])) {
+                    throw new InvalidArgumentException("Debe seleccionar las condiciones de crédito para la venta al crédito.");
+                }
+            }
+
             // 1. Crear el registro de Venta
             $venta = Venta::create([
                 'cliente_id' => $datosVenta['cliente_id'] ?? null,
@@ -45,7 +60,7 @@ class FacturacionService
                 'numero_control' => 'DTE-'. $datosVenta['tipo_documento'] . '-' . str_pad(Venta::where('tipo_documento', $datosVenta['tipo_documento'])->count() + 1, 15, '0', STR_PAD_LEFT),
                 'fecha_emision' => now()->toDateString(),
                 'hora_emision' => now()->toTimeString(),
-                'condicion_operacion' => $datosVenta['condicion_operacion'] ?? '1', // 1 Contado, 2 Crédito
+                'condicion_operacion' => $condicionOperacion, // 1 Contado, 2 Crédito
                 'estado_dte' => 'pendiente',
             ]);
 
@@ -55,11 +70,10 @@ class FacturacionService
 
             // 2. Procesar Detalles y Rebajar Inventario
             $detallesParaInventario = [];
-            $bodegaId = $datosVenta['bodega_id'] ?? 1; // Asumimos bodega 1 si no viene
+            $bodegaId = $datosVenta['bodega_id'] ?? 1;
 
             foreach ($detalles as $index => $det) {
                 $montoGravado = $det['cantidad'] * $det['precio_unitario'];
-                // TODO: lógica fina de si el producto es exento o no sujeto. Asumimos gravado.
                 $totales['gravado'] += $montoGravado;
 
                 DetalleVenta::create([
@@ -79,7 +93,7 @@ class FacturacionService
                 }
             }
 
-            // Llamada al Inventario Service para salida
+            // Salida de inventario
             if (!empty($detallesParaInventario)) {
                 $this->inventarioService->registrarSalida([
                     'bodega_id' => $bodegaId,
@@ -98,17 +112,11 @@ class FacturacionService
                 'total_pagar' => $totalPagar,
             ]);
 
-            // 3. Si es venta al crédito → crear crédito comercial automáticamente
-            if ($venta->condicion_operacion === '2' && $venta->cliente_id) {
+            // 3. Si es venta al crédito → crear crédito comercial obligatoriamente dentro de la transacción
+            if ($venta->condicion_operacion === '2') {
                 $condicionesCredito = $datosVenta['condiciones_credito'] ?? [];
-                if (!empty($condicionesCredito['condicion_credito_id'])) {
-                    try {
-                        $this->creditoService->crearCreditoDesdeVenta($venta, $condicionesCredito);
-                    } catch (\Exception $e) {
-                        // El crédito no bloquea la factura; se puede crear manualmente después.
-                        \Log::warning("Factura {$venta->numero_control}: no se pudo crear crédito automáticamente. " . $e->getMessage());
-                    }
-                }
+                // Se ejecuta sin atrapar excepción para que cualquier fallo revierta venta e inventario
+                $this->creditoService->crearCreditoDesdeVenta($venta, $condicionesCredito);
             }
 
             // 4. Firmar y Transmitir si no es Ticket interno
@@ -123,7 +131,6 @@ class FacturacionService
     private function firmarYTransmitir(Venta $venta)
     {
         try {
-            // Generar JSON estructural DTE (Simplificado aquí, en la vida real es un builder largo)
             $jsonEstructural = [
                 'identificacion' => [
                     'version' => 1,
@@ -132,7 +139,6 @@ class FacturacionService
                     'numeroControl' => $venta->numero_control,
                     'codigoGeneracion' => $venta->codigo_generacion,
                 ],
-                // ... más campos requeridos por MH ...
             ];
 
             // 1. Firmar
@@ -157,7 +163,6 @@ class FacturacionService
             $venta->estado_dte = 'contingencia';
             $venta->mensaje_mh = $e->getMessage();
             
-            // Asignar a un lote de contingencia activo o crear uno
             $lote = LoteContingencia::firstOrCreate(
                 ['estado' => 'pendiente'],
                 ['codigo_lote' => strtoupper((string) Str::uuid()), 'fecha_transmision' => now()->toDateString(), 'hora_transmision' => now()->toTimeString()]
@@ -165,7 +170,6 @@ class FacturacionService
 
             $venta->lote_contingencia_id = $lote->id;
             
-            // Encolar Job para intentar transmitir luego
             TransmitirDteContingencia::dispatch($venta->id)->delay(now()->addMinutes(5));
         }
 

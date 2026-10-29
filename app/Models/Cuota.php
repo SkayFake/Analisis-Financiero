@@ -42,6 +42,11 @@ class Cuota extends Model
         return $this->hasMany(Pago::class);
     }
 
+    public function aplicacionesPago()
+    {
+        return $this->hasMany(PagoCuota::class);
+    }
+
     // ─── Scopes ──────────────────────────────────────────────────────────
 
     public function scopePendientes($query)
