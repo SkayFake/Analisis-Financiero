@@ -675,7 +675,55 @@ class CreditoComercialFlowTest extends TestCase
         $this->assertEquals(50.00, (float) $apl2->abono_capital);
     }
 
-    /** 10. Rechazo de sobrepago e importes mayores a la deuda exigible */
+    /** El plan debe mostrar lo pendiente de cada cuota después de un abono distribuido. */
+    public function test_pago_de_300_actualiza_pendientes_visibles_y_monto_sugerido(): void
+    {
+        $credito = Credito::create([
+            'numero' => Credito::generarNumero(),
+            'cliente_id' => $this->cliente->id,
+            'condicion_credito_id' => $this->condicionSinInteres->id,
+            'monto_original' => 1129.98,
+            'saldo_actual' => 1129.98,
+            'numero_cuotas' => 6,
+            'frecuencia_pago' => 'mensual',
+            'plazo_dias' => 180,
+            'fecha_solicitud' => now(),
+            'fecha_aprobacion' => now(),
+            'fecha_primera_cuota' => now()->addMonth(),
+            'fecha_vencimiento' => now()->addMonths(6),
+            'estado' => 'vigente',
+        ]);
+        app(CreditoService::class)->generarPlanPago($credito);
+        $this->actingAs($this->adminUser)->post(route('creditos.pagos.store', $credito), [
+            'monto' => 300, 'forma_pago' => 'efectivo',
+        ])->assertRedirect(route('creditos.show', $credito))->assertSessionHasNoErrors();
+
+        $this->assertSame('829.98', $credito->fresh()->saldo_actual);
+        $cuotas = $credito->cuotas()->get();
+        $this->assertSame('941.65', $cuotas[0]->saldo_pendiente); // El plan original se conserva.
+        $this->assertSame(0.0, $cuotas[0]->saldo_por_pagar);
+        $this->assertSame(76.66, $cuotas[1]->saldo_por_pagar);
+
+        $response = $this->get(route('creditos.show', $credito))->assertOk()->assertSee('($76.66)');
+        $dom = new \DOMDocument;
+        @$dom->loadHTML('<?xml encoding="UTF-8"?>'.$response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $filas = $xpath->query('//table[@aria-label="Plan de cuotas"]/tbody/tr');
+        $this->assertCount(6, $filas);
+        $celdas = fn ($fila) => array_map(fn ($td) => trim($td->textContent), iterator_to_array($xpath->query('./td', $filas->item($fila))));
+        $this->assertSame(['$188.33', '$0.00', 'Pagada'], array_slice($celdas(0), 5));
+        $this->assertSame(['$111.67', '$76.66', 'Parcial'], array_slice($celdas(1), 5));
+        $this->assertSame(['$0.00', '$188.33', 'Pendiente'], array_slice($celdas(2), 5));
+        $this->assertSame('76.66', $xpath->query('//input[@name="monto"]')->item(0)->getAttribute('value'));
+
+        $this->post(route('creditos.pagos.store', $credito), [
+            'monto' => 76.66, 'forma_pago' => 'efectivo',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('pagada', $cuotas[1]->fresh()->estado);
+        $this->assertSame('753.32', $credito->fresh()->saldo_actual);
+        $this->get(route('creditos.show', $credito))->assertOk()->assertSee('($188.33)');
+    }
+
     public function test_rechazo_de_sobrepago(): void
     {
         $creditoService = app(CreditoService::class);

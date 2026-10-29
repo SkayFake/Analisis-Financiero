@@ -161,7 +161,7 @@
             @if($credito->cuota_pendiente)
             <div class="stat-card-change {{ $credito->dias_mora > 0 ? 'down' : '' }}" style="margin-top: 0.5rem;">
                 Próx. pago: {{ $credito->cuota_pendiente->fecha_vencimiento?->format('d/m/Y') }}
-                (${{ number_format($credito->cuota_pendiente->total, 2) }})
+                (${{ number_format($credito->cuota_pendiente->saldo_por_pagar, 2) }})
             </div>
             @endif
         </div>
@@ -226,6 +226,9 @@
             <div class="card-header">
                 <h3 class="card-title">Plan de Cuotas</h3>
             </div>
+            <p style="padding: 0.75rem 1.5rem; margin: 0; color: var(--neutral-500); font-size: 0.82rem;">
+                El total de cada cuota corresponde al plan original. Los abonos y el importe pendiente se actualizan con cada pago.
+            </p>
             <div class="card-body" style="padding: 0;">
                 @if($credito->cuotas->isEmpty())
                     <div class="empty-state" style="padding: 2rem;">
@@ -237,7 +240,7 @@
                     </div>
                 @else
                 <div class="data-table-wrapper" style="max-height: 400px;">
-                    <table class="data-table">
+                    <table class="data-table" aria-label="Plan de cuotas">
                         <thead>
                             <tr>
                                 <th>No.</th>
@@ -248,7 +251,8 @@
                                 @endif
                                 <th class="text-right">Total Cuota</th>
                                 <th class="text-right">Mora</th>
-                                <th class="text-right">Saldo Restante</th>
+                                <th class="text-right">Abonado</th>
+                                <th class="text-right">Pendiente de cuota</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -269,7 +273,8 @@
                                         —
                                     @endif
                                 </td>
-                                <td style="text-align: right;">${{ number_format($cuota->saldo_pendiente, 2) }}</td>
+                                <td style="text-align: right;">${{ number_format($cuota->monto_pagado, 2) }}</td>
+                                <td style="text-align: right;">${{ number_format($cuota->saldo_por_pagar, 2) }}</td>
                                 <td>
                                     @php
                                         $cEstado = match($cuota->estado) {
@@ -366,7 +371,7 @@
                     @if($credito->cuota_pendiente)
                     <div class="alert alert-info">
                         <strong>Cuota #{{ $credito->cuota_pendiente->numero_cuota }} — Sugerido:</strong>
-                        ${{ number_format($credito->cuota_pendiente->total_con_mora, 2) }}
+                        ${{ number_format($credito->cuota_pendiente->saldo_por_pagar, 2) }}
                         @if((float)$credito->cuota_pendiente->mora > 0)
                             <br><span style="color: var(--danger-600);">
                                 Incluye mora: ${{ number_format($credito->cuota_pendiente->mora, 2) }}
@@ -379,7 +384,7 @@
                     <div class="form-group">
                         <label class="form-label">Monto a Recibir ($)</label>
                         <input type="number" step="0.01" name="monto" class="form-input" required
-                            value="{{ $credito->cuota_pendiente?->total_con_mora }}">
+                            value="{{ old('monto', number_format($credito->cuota_pendiente?->saldo_por_pagar ?? 0, 2, '.', '')) }}">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Forma de Pago</label>

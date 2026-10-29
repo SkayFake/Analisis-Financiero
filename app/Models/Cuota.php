@@ -73,6 +73,12 @@ class Cuota extends Model
         return (float) $this->total + (float) $this->mora;
     }
 
+    /** Importe que falta pagar de esta cuota, incluyendo la mora y los abonos recibidos. */
+    public function getSaldoPorPagarAttribute(): float
+    {
+        return max(0.0, round($this->total_con_mora - (float) $this->monto_pagado, 2));
+    }
+
     public function getEstaVencidaAttribute(): bool
     {
         if (!$this->fecha_vencimiento) return false;
