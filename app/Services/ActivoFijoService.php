@@ -67,12 +67,16 @@ class ActivoFijoService
     }
 
     /**
-     * Calcula y registra la depreciación mensual para todos los activos
+     * Calcula la depreciación mensual; una lista de IDs limita el cálculo a esos activos.
      */
-    public function calcularDepreciacionMasiva($fechaCalculo = null)
+    public function calcularDepreciacionMasiva($fechaCalculo = null, ?array $activosIds = null)
     {
         $fechaCalculo = $fechaCalculo ? Carbon::parse($fechaCalculo)->endOfMonth() : Carbon::now()->endOfMonth();
-        $activos = ActivoFijo::where('estado', 'activo')->get();
+        $query = ActivoFijo::where('estado', 'activo');
+        if ($activosIds !== null) {
+            $query->whereIn('id', $activosIds);
+        }
+        $activos = $query->get();
 
         $depreciados = 0;
         foreach ($activos as $activo) {
