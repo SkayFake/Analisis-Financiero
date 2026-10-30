@@ -440,7 +440,7 @@
                                 <strong>Hasta {{ $condicionSeleccionada->plazo_maximo_cuotas }} cuotas</strong>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                                <span>Límite Auto-Aprobación:</span>
+                                <span>{{ config('expedientes.exigir_creditos_nuevos') ? 'Límite de referencia:' : 'Límite Auto-Aprobación:' }}</span>
                                 <strong>${{ number_format($condicionSeleccionada->monto_auto_aprobado, 2) }}</strong>
                             </div>
                             <div style="border-top: 1px dashed var(--neutral-200); margin-top: 0.4rem; padding-top: 0.4rem;">
@@ -465,6 +465,9 @@
                         </div>
                     </div>
 
+                    @if(config('expedientes.exigir_creditos_nuevos'))
+                        <p style="font-size:.8rem;margin:.75rem 0;">El crédito quedará pendiente. Complete y revise el expediente documental del cliente, del crédito y de cada fiador desde la ficha del crédito.</p>
+                    @endif
                     {{-- Documentación y Verificaciones --}}
                     <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8125rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">

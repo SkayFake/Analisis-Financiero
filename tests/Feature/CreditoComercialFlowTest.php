@@ -40,6 +40,8 @@ class CreditoComercialFlowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Escenarios del flujo anterior; el expediente obligatorio se cubre en ExpedientesTest.
+        config(['expedientes.exigir_creditos_nuevos' => false]);
         // This suite explicitly exercises the future fiscal path with mocked services.
         config(['erp.dte.enabled' => true]);
 

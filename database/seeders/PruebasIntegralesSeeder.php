@@ -75,6 +75,9 @@ class PruebasIntegralesSeeder extends Seeder
             throw new RuntimeException('PruebasIntegralesSeeder contiene datos y accesos de prueba. Ejecútelo en un entorno local o de pruebas, nunca en producción.');
         }
         $dteAnterior = config('erp.dte.enabled');
+        $expedienteAnterior = config('expedientes.exigir_creditos_nuevos');
+        // Los escenarios históricos conservan su aprobación; el suplemento crea sus comprobantes.
+        config(['expedientes.exigir_creditos_nuevos' => false]);
         config(['erp.dte.enabled' => false]);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         try {
@@ -99,9 +102,10 @@ class PruebasIntegralesSeeder extends Seeder
                 return true;
             });
         } finally {
-            config(['erp.dte.enabled' => $dteAnterior]);
+            config(['erp.dte.enabled' => $dteAnterior, 'expedientes.exigir_creditos_nuevos' => $expedienteAnterior]);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
+        $this->call(ExpedientesPruebasSeeder::class);
         $this->command?->info($creado
             ? 'Datos QA creados. Consulte docs/pruebas-integrales.md para escenarios, accesos y resultados esperados.'
             : 'El conjunto QA ya existe. Se conservaron sus datos y las pruebas manuales realizadas; no se duplicó ni restableció nada.');
@@ -123,6 +127,7 @@ class PruebasIntegralesSeeder extends Seeder
             'activos.view', 'activos.create', 'activos.edit', 'activos.baja',
             'usuarios.view', 'usuarios.create', 'usuarios.edit', 'usuarios.delete',
             'roles.manage', 'configuracion.manage', 'reportes.view', 'reportes.export',
+            'expedientes.view', 'expedientes.upload', 'expedientes.review', 'expedientes.manage',
             'vendedores.view', 'vendedores.manage', 'vendedores.metas', 'vendedores.assign', 'vendedores.gestionar', 'vendedores.export', 'vendedores.audit',
         ];
         foreach ($permisos as $permiso) {

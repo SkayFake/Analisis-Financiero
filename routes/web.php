@@ -29,6 +29,17 @@ Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    // Expedientes privados: ninguna ruta de archivos se publica en /storage.
+    Route::get('/clientes/{cliente}/expediente', [\App\Http\Controllers\ExpedienteController::class, 'cliente'])->name('expedientes.cliente');
+    Route::get('/creditos/{credito}/expediente', [\App\Http\Controllers\ExpedienteController::class, 'credito'])->name('expedientes.credito');
+    Route::post('/clientes/{cliente}/documentos', [\App\Http\Controllers\ExpedienteController::class, 'subirCliente'])->name('expedientes.cliente.subir');
+    Route::post('/creditos/{credito}/documentos', [\App\Http\Controllers\ExpedienteController::class, 'subirCredito'])->name('expedientes.credito.subir');
+    Route::post('/creditos/{credito}/fiadores/{fiador}/documentos', [\App\Http\Controllers\ExpedienteController::class, 'subirFiador'])->name('expedientes.fiador.subir');
+    Route::get('/clientes/{cliente}/documentos/{documento}/descargar', [\App\Http\Controllers\ExpedienteController::class, 'descargar'])->name('expedientes.descargar');
+    Route::post('/clientes/{cliente}/documentos/{documento}/revision', [\App\Http\Controllers\ExpedienteController::class, 'revisar'])->name('expedientes.revisar');
+    Route::post('/creditos/{credito}/fiadores', [\App\Http\Controllers\ExpedienteController::class, 'fiador'])->name('expedientes.fiador.crear');
+    Route::put('/creditos/{credito}/fiadores/{fiador}', [\App\Http\Controllers\ExpedienteController::class, 'fiador'])->name('expedientes.fiador.actualizar');
+
     // Clientes
     Route::resource('clientes', \App\Http\Controllers\ClienteController::class);
 

@@ -147,6 +147,7 @@ a:hover {
 
 .erp-main {
     flex: 1;
+    min-width: 0;
     margin-left: var(--sidebar-width);
     transition: margin-left var(--transition-base);
     min-height: 100vh;

@@ -58,11 +58,11 @@ class IncobrableService
     {
         $motivo = $this->validarMotivo($motivo);
         DB::transaction(function () use ($credito, $motivo, $userId) {
+            $cliente = Cliente::withTrashed()->whereKey($credito->cliente_id)->lockForUpdate()->firstOrFail();
             $credito = Credito::whereKey($credito->id)->lockForUpdate()->firstOrFail();
             if (! in_array($credito->estado, ['vigente', 'vencido'])) {
                 throw new InvalidArgumentException('Solo puede trasladar a incobrables un crédito vigente o vencido.');
             }
-            $cliente = Cliente::withTrashed()->whereKey($credito->cliente_id)->lockForUpdate()->firstOrFail();
             $cuotas = $credito->cuotas()->lockForUpdate()->get();
             $pendiente = round($cuotas->sum('saldo_por_pagar'), 2);
             if ($pendiente <= 0 && (float) $credito->saldo_actual <= 0) {
@@ -94,11 +94,11 @@ class IncobrableService
     {
         $motivo = $this->validarMotivo($motivo);
         DB::transaction(function () use ($credito, $motivo, $userId) {
+            $cliente = Cliente::withTrashed()->whereKey($credito->cliente_id)->lockForUpdate()->firstOrFail();
             $credito = Credito::whereKey($credito->id)->lockForUpdate()->firstOrFail();
             if ($credito->estado !== 'incobrable') {
                 throw new InvalidArgumentException('Solo puede reactivar un crédito incobrable.');
             }
-            $cliente = Cliente::withTrashed()->whereKey($credito->cliente_id)->lockForUpdate()->firstOrFail();
             $cuotas = $credito->cuotas()->lockForUpdate()->get();
             if ($cuotas->sum('saldo_por_pagar') <= 0 && (float) $credito->saldo_actual <= 0) {
                 throw new InvalidArgumentException('El crédito no tiene saldo pendiente para reactivar el cobro.');
@@ -139,6 +139,7 @@ class IncobrableService
                 'total_comisiones_recalculadas' => 0,
                 'total_saldo_pendiente' => 0,
             ];
+            $cliente = Cliente::withTrashed()->whereKey($cliente->id)->lockForUpdate()->firstOrFail();
             foreach ($cliente->creditos()->incobrables()->orderBy('id')->lockForUpdate()->get() as $credito) {
                 $this->reactivarCredito($credito, 'Reactivación conjunta solicitada para el cliente', $userId);
                 $resumen['creditos_reactivados']++;

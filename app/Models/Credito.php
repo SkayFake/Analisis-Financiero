@@ -16,12 +16,12 @@ use Carbon\Carbon;
  * Flujo:
  * Venta al crédito → CreditoComercial → Cuotas → Pagos
  *
- * Estados de aprobación (Ley LPC El Salvador):
+ * Estados internos de aprobación:
  * - 'pendiente_aprobacion': Cliente nuevo o monto > límite auto-aprobado
  * - 'aprobado': Crédito pre-aprobado, en espera de activarse
  * - 'vigente': Crédito activo, cuotas al día
  * - 'vencido': Tiene cuotas vencidas (> dias_gracia)
- * - 'incobrable': > 180 días en mora (estándar El Salvador para provisiones)
+ * - 'incobrable': traslado documentado según la política interna
  * - 'refinanciado': Reestructurado
  * - 'cancelado': Pagado en su totalidad
  * - 'rechazado': No aprobado por la institución
@@ -31,6 +31,7 @@ class Credito extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'expediente_requerido', 'requisitos_expediente',
         'vendedor_origen_id',
         'numero',
         'cliente_id',
@@ -64,6 +65,7 @@ class Credito extends Model
     ];
 
     protected $casts = [
+        'expediente_requerido' => 'boolean', 'requisitos_expediente' => 'array',
         'vendedor_origen_reconstruido' => 'boolean',
         'monto_original'      => 'decimal:2',
         'saldo_actual'        => 'decimal:2',

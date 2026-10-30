@@ -40,6 +40,8 @@ class CorreccionesIntegridadTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Escenarios del flujo anterior; el expediente obligatorio se cubre en ExpedientesTest.
+        config(['expedientes.exigir_creditos_nuevos' => false]);
         Http::preventStrayRequests();
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

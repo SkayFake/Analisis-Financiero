@@ -59,11 +59,13 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $vendedorPermisos = ['vendedores.view', 'vendedores.manage', 'vendedores.metas', 'vendedores.assign', 'vendedores.gestionar', 'vendedores.export', 'vendedores.audit'];
 
+        $expedientePermisos = ['expedientes.view', 'expedientes.upload', 'expedientes.review', 'expedientes.manage'];
+
         // Crear todos los permisos
         $todosPermisos = array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
             $incobrablePermisos, $inventarioPermisos, $facturacionPermisos,
-            $activoPermisos, $sistemaPermisos, $vendedorPermisos
+            $activoPermisos, $sistemaPermisos, $vendedorPermisos, $expedientePermisos
         );
 
         $todosPermisos[] = 'facturacion.modificar_precio';
@@ -82,14 +84,14 @@ class RolesAndPermissionsSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => 'admin']);
         $admin->givePermissionTo(array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
-            $incobrablePermisos, $sistemaPermisos, $vendedorPermisos
+            $incobrablePermisos, $sistemaPermisos, $vendedorPermisos, $expedientePermisos
         ));
 
         // Gerente de Cobros
         $cobrosManager = Role::firstOrCreate(['name' => 'cobros-manager']);
         $cobrosManager->givePermissionTo(array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
-            $incobrablePermisos, $vendedorPermisos, ['reportes.view', 'reportes.export']
+            $incobrablePermisos, $vendedorPermisos, $expedientePermisos, ['reportes.view', 'reportes.export']
         ));
 
         // Agente de Cobros
@@ -98,7 +100,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'clientes.view', 'clientes.create', 'clientes.edit',
             'creditos.view', 'creditos.create',
             'cobros.view', 'cobros.process',
-            'incobrables.view', 'vendedores.view', 'vendedores.gestionar',
+            'incobrables.view', 'vendedores.view', 'vendedores.gestionar', 'expedientes.view', 'expedientes.upload',
         ]);
 
         // Gerente de Inventarios

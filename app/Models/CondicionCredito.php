@@ -8,12 +8,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Condiciones de crédito comercial configurables por la institución.
  *
- * Marco legal El Salvador:
- * - Ley de Protección al Consumidor (D.776) Art. 18-A, 18-B: transparencia de tasas y mora.
- * - Ley de Usura (D.720): la tasa de interés no puede superar el doble de la
- *   tasa activa promedio bancaria publicada por el BCR (~18-22% anual en 2025-2026).
- * - Recomendación: configurar tasa_interes_anual = 0 para crédito a precio de lista
- *   y tasa_mora_mensual = 3% (estándar comercio salvadoreño).
+ * Las condiciones son políticas internas, no topes legales certificados.
+ * Verifique las tasas máximas vigentes y las obligaciones de información que
+ * correspondan a la actividad y al segmento antes de operar comercialmente.
  */
 class CondicionCredito extends Model
 {

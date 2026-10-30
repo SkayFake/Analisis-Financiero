@@ -9,7 +9,7 @@ class Fiador extends Model
     protected $table = 'fiadores';
 
     protected $fillable = [
-        'cliente_id', 'credito_id', 'nombre', 'dui', 'nit',
+        'credito_id', 'nombre', 'dui', 'nit',
         'direccion', 'telefono', 'lugar_trabajo', 'ingresos',
         'egresos', 'observaciones',
     ];
@@ -21,7 +21,7 @@ class Fiador extends Model
 
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class);
+        return $this->hasOneThrough(Cliente::class, Credito::class, 'id', 'id', 'credito_id', 'cliente_id');
     }
 
     public function credito()

@@ -159,7 +159,7 @@
                             </select>
                             @error('condicion_credito_id')<span class="form-error">{{ $message }}</span>@enderror
                             <span class="form-hint">
-                                El interés (si aplica) y la mora están regulados por la Ley de Protección al Consumidor (D.776) de El Salvador.
+                                Verifique las tasas y los límites vigentes aplicables a su actividad antes de configurar la condición.
                             </span>
                         </div>
 
@@ -218,13 +218,14 @@
                             </select>
                         </div>
 
-                        {{-- Documentación requerida por LPC El Salvador --}}
+                        <p>La solicitud quedará pendiente hasta completar y revisar el expediente documental del cliente, del crédito y de sus fiadores. Podrá adjuntar los archivos después de guardar.</p>
+                        {{-- Documentación según política interna --}}
                         <div class="form-group" style="grid-column: span 2;">
                             <label class="form-label">Documentación Verificada</label>
                             <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 0.5rem;">
                                 <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                     <input type="checkbox" name="dui_verificado" value="1" {{ old('dui_verificado') ? 'checked' : '' }}>
-                                    <span>DUI verificado <span style="font-size: 0.75rem; color: var(--neutral-500);">(requerido por Ley AML)</span></span>
+                                    <span>Comprobación preliminar de DUI <span style="font-size: 0.75rem; color: var(--neutral-500);">(según la condición interna seleccionada)</span></span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                     <input type="checkbox" name="referencia_verificada" value="1" {{ old('referencia_verificada') ? 'checked' : '' }}>

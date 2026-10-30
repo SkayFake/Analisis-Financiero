@@ -25,10 +25,11 @@ use Illuminate\Support\Facades\Validator;
  * - Puede tener o no interés sobre el saldo (configurable por la institución).
  * - Se aplica mora si la cuota no se paga dentro de los días de gracia.
  *
- * Proceso de aprobación (basado en LPC El Salvador):
- * - Cliente FRECUENTE + monto ≤ límite auto-aprobado + requisitos cumplidos → aprobación automática.
+ * Proceso de aprobación según política interna:
+ * - Solicitudes nuevas: revisión manual de comprobantes antes de aprobar.
+ * - Modo histórico: cliente frecuente dentro del límite y requisitos completos → aprobación automática.
  * - Cliente NUEVO o monto mayor o documentación incompleta → requiere revisión manual (pendiente_aprobacion).
- * - Documentación requerida: DUI (Ley AML) y fiador cuando la condición lo exija.
+ * - Documentación: expediente revisado y fiador cuando la condición interna lo exija.
  */
 class CreditoService
 {
@@ -92,7 +93,7 @@ class CreditoService
         $tieneFiador = !empty($documentacion['tiene_fiador']);
 
         if ($condicion->requiere_dui) {
-            $duiPresente = DatosSalvador::duiValido($cliente->dui);
+            $duiPresente = app(ExpedienteService::class)->identidad($cliente)['dui_valido'];
             if (!$duiPresente || !$duiVerificado) {
                 throw new InvalidArgumentException("La condición de crédito exige presentar y verificar el DUI del cliente.");
             }
@@ -110,26 +111,7 @@ class CreditoService
      */
     public function cumpleRequisitosAprobacion(Credito $credito): bool
     {
-        $condicion = $credito->condicionCredito;
-        if (!$condicion) {
-            return false;
-        }
-
-        if ($condicion->requiere_dui) {
-            $cliente = $credito->cliente;
-            $duiPresente = $cliente && DatosSalvador::duiValido($cliente->dui);
-            if (!$duiPresente || !$credito->dui_verificado) {
-                return false;
-            }
-        }
-
-        if ($condicion->requiere_fiador) {
-            if ($credito->fiadores()->count() === 0) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->obtenerRequisitosFaltantes($credito) === [];
     }
 
     /**
@@ -146,10 +128,10 @@ class CreditoService
 
         if ($condicion->requiere_dui) {
             $cliente = $credito->cliente;
-            if (!$cliente || !DatosSalvador::duiValido($cliente->dui)) {
+            if (!$cliente || !app(ExpedienteService::class)->identidad($cliente)['dui_valido']) {
                 $faltantes[] = 'Número de DUI no registrado o con formato/verificador inválido.';
             }
-            if (!$credito->dui_verificado) {
+            if (!$credito->expediente_requerido && !$credito->dui_verificado) {
                 $faltantes[] = 'Verificación del documento DUI.';
             }
         }
@@ -158,6 +140,10 @@ class CreditoService
             if ($credito->fiadores()->count() === 0) {
                 $faltantes[] = 'Registro de fiador requerido por la condición.';
             }
+        }
+
+        if ($credito->expediente_requerido) {
+            $faltantes = array_merge($faltantes, app(ExpedienteService::class)->faltantes($credito));
         }
 
         return $faltantes;
@@ -244,7 +230,8 @@ class CreditoService
             $montoFactura = (float) $ventaLocked->total_pagar;
             $esClienteFrecuente = $this->esClienteFrecuente($cliente, $condicion);
 
-            $autoAprobado = $requisitosCompletos
+            $expedienteRequerido = (bool) config('expedientes.exigir_creditos_nuevos', true);
+            $autoAprobado = !$expedienteRequerido && $requisitosCompletos
                 && $esClienteFrecuente
                 && $montoFactura <= (float) $condicion->monto_auto_aprobado;
 
@@ -261,6 +248,8 @@ class CreditoService
             );
 
             $credito = Credito::create([
+                'expediente_requerido' => $expedienteRequerido,
+                'requisitos_expediente' => $expedienteRequerido ? app(ExpedienteService::class)->politica($cliente) : null,
                 'numero'               => Credito::generarNumero(),
                 'cliente_id'           => $ventaLocked->cliente_id,
                 'venta_id'             => $ventaLocked->id,
@@ -289,13 +278,20 @@ class CreditoService
                 'motivo_aprobacion'    => $autoAprobado
                     ? 'Aprobación automática — cliente frecuente, requisitos completos y monto dentro del límite.'
                     : null,
-                'dui_verificado'       => !empty($condiciones['dui_verificado']),
+                'dui_verificado'       => !$expedienteRequerido && !empty($condiciones['dui_verificado']),
                 'referencia_verificada' => !empty($condiciones['referencia_verificada']),
             ]);
 
             // Guardar fiador si viene en los datos
             if (!empty($condiciones['fiador']) && is_array($condiciones['fiador'])) {
                 $credito->fiadores()->create($condiciones['fiador']);
+            }
+
+            if ($expedienteRequerido) {
+                app(ExpedienteService::class)->evento($cliente, $credito, null, null, 'solicitud_registrada', null, [
+                    'politica' => $credito->requisitos_expediente,
+                    'fiadores' => $credito->fiadores()->get()->toArray(),
+                ], 'Solicitud pendiente de completar y revisar el expediente documental.', auth()->user());
             }
 
             if ($autoAprobado) {
@@ -419,6 +415,7 @@ class CreditoService
     public function aprobarCredito(Credito $credito, string $motivo, ?int $usuarioId = null): Credito
     {
         return DB::transaction(function () use ($credito, $motivo, $usuarioId) {
+            Cliente::whereKey($credito->cliente_id)->lockForUpdate()->firstOrFail();
             $credito = Credito::where('id', $credito->id)->lockForUpdate()->firstOrFail();
 
             if ($credito->estado !== 'pendiente_aprobacion') {
@@ -429,6 +426,17 @@ class CreditoService
             if (!empty($faltantes)) {
                 $lista = implode(', ', $faltantes);
                 throw new InvalidArgumentException("No se puede aprobar el crédito porque no cumple los requisitos: {$lista}");
+            }
+
+            if ($credito->expediente_requerido) {
+                $expedientes = app(ExpedienteService::class);
+                $expedientes->evento($credito->cliente, $credito, null, null, 'aprobacion_credito', null, [
+                    'politica' => $credito->requisitos_expediente,
+                    'comprobacion' => $expedientes->lista($credito),
+                    'cliente' => $expedientes->identidad($credito->cliente),
+                    'fiadores' => $credito->fiadores()->get()->toArray(),
+                ], $motivo, \App\Models\User::find($usuarioId ?? auth()->id()));
+                $credito->dui_verificado = $expedientes->identidad($credito->cliente)['dui_valido'];
             }
 
             $credito->update([

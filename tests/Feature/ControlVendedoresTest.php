@@ -59,6 +59,8 @@ class ControlVendedoresTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Escenarios del flujo anterior; el expediente obligatorio se cubre en ExpedientesTest.
+        config(['expedientes.exigir_creditos_nuevos' => false]);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         Http::preventStrayRequests();
         Queue::fake();
@@ -464,4 +466,17 @@ class ControlVendedoresTest extends TestCase
         ])->assertSessionHasErrors('vendedor_id');
         $this->assertSame($this->a->id, $this->cliente->fresh()->vendedor_id);
     }
+    public function test_venta_credito_con_control_documental_crea_solicitud_pendiente(): void
+    {
+        config(['expedientes.exigir_creditos_nuevos' => true]);
+        $venta = $this->venta(true);
+        $credito = $venta->credito;
+        $this->assertSame('local', $venta->estado_dte);
+        $this->assertSame('pendiente_aprobacion', $credito->estado);
+        $this->assertTrue($credito->expediente_requerido);
+        $this->assertSame(0, $credito->cuotas()->count());
+        $this->assertDatabaseHas('expediente_eventos', ['credito_id' => $credito->id, 'accion' => 'solicitud_registrada']);
+        Http::assertNothingSent();
+    }
+
 }

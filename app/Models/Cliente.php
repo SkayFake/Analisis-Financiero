@@ -32,7 +32,7 @@ class Cliente extends Model
 
     public function fiadores()
     {
-        return $this->hasMany(Fiador::class);
+        return $this->hasManyThrough(Fiador::class, Credito::class, 'cliente_id', 'credito_id');
     }
 
     public function creditos()

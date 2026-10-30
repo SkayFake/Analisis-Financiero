@@ -134,3 +134,8 @@ DB_DATABASE=analisis_financiero_testing php artisan test --compact
 ```
 
 La suite puede vaciar esa base. No la dirija a la base de pruebas manuales que desee conservar. `PruebasIntegralesSeederTest` comprueba cobertura de tablas, identidades, balances, capital/cuotas/pagos, inventario, depreciaciones, estados, reejecución, conservación de datos anteriores, reversión, ausencia de llamadas externas, consulta de módulos y PDFs. También carga los casos en fin de mes y en un 29 de febrero.
+
+
+## Expedientes documentales
+
+El seeder también agrega comprobantes PDF sintéticos privados del cliente, crédito y fiador, con versiones, rechazos, vencimientos y pendientes. Consulte [la matriz y el flujo documental](expedientes-credito-el-salvador.md). Los nuevos archivos se agregan incrementalmente al repetir el seeder; no se restablecen las revisiones manuales.

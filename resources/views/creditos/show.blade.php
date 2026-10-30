@@ -39,6 +39,7 @@
             </div>
         </div>
         <div class="page-actions" style="display: flex; gap: 0.75rem;">
+            @can('expedientes.view')<a class="btn btn-secondary" href="{{ route('expedientes.credito', $credito) }}">Expediente documental</a>@endcan
             @can('declareUncollectible', $credito)
                 <button type="button" onclick="document.getElementById('modalIncobrable').style.display='flex'" class="btn btn-secondary">Trasladar a incobrables</button>
             @endcan
@@ -483,7 +484,7 @@
                 <div class="modal-body">
                     <div class="alert alert-info" style="margin-bottom: 1rem;">
                         Al aprobar, se generará automáticamente el plan de cuotas y el crédito quedará vigente.
-                        La aprobación queda registrada según <strong>Ley de Protección al Consumidor (D.776) El Salvador</strong>.
+                        La aprobación queda registrada con responsable, motivo y evidencia documental cuando corresponda.
                     </div>
                     <div class="form-group">
                         <label class="form-label">Motivo de Aprobación <span class="required">*</span></label>
