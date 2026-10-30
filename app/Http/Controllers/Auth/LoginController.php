@@ -17,11 +17,16 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $validated = $request->validate([
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'password' => ['required', 'string', 'max:4096'],
             'remember' => ['sometimes', 'boolean'],
         ]);
+
+        $credentials = [
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+        ];
 
         $cuenta = 'login:cuenta:'.hash('sha256', Str::lower(trim($credentials['email'])));
         $ip = 'login:ip:'.hash('sha256', (string) $request->ip());
