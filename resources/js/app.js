@@ -1,4 +1,5 @@
 import './bootstrap';
+import './mascaras-salvador';
 import Alpine from 'alpinejs';
 
 // Livewire 3/4 bundles and initializes Alpine internally.
