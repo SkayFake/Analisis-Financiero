@@ -130,27 +130,23 @@ class MetricasCobroService
      */
     public function rendimientoPorVendedor($fechaInicio, $fechaFin): array
     {
-        return Pago::whereBetween('fecha_pago', [$fechaInicio, $fechaFin])
-            ->join('creditos', 'pagos.credito_id', '=', 'creditos.id')
-            ->join('vendedores', 'creditos.vendedor_id', '=', 'vendedores.id')
-            ->select(
-                'vendedores.id',
-                'vendedores.nombre',
-                'vendedores.meta_mensual',
-                DB::raw('COUNT(pagos.id) as total_pagos'),
-                DB::raw('SUM(pagos.monto_total) as total_cobrado'),
-                DB::raw('SUM(pagos.abono_capital) as total_capital'),
-                DB::raw('SUM(pagos.pago_interes) as total_interes')
-            )
-            ->groupBy('vendedores.id', 'vendedores.nombre', 'vendedores.meta_mensual')
-            ->get()
-            ->map(function ($v) {
-                $v->porcentaje_meta = $v->meta_mensual > 0
-                    ? round(($v->total_cobrado / $v->meta_mensual) * 100, 2)
-                    : 0;
-                return $v;
-            })
-            ->toArray();
+        $periodo = \Carbon\Carbon::parse($fechaInicio)->startOfMonth()->toDateString();
+        $metas = \App\Models\VendedorMeta::whereDate('periodo', $periodo)->get()->keyBy('vendedor_id');
+        $cobros = Pago::whereBetween('fecha_pago', [$fechaInicio, $fechaFin])->whereNotNull('vendedor_id')
+            ->select('vendedor_id')->selectRaw('COUNT(*) AS cantidad, SUM(monto_total) AS total, SUM(abono_capital) AS capital, SUM(pago_interes + pago_mora) AS interes_mora')
+            ->groupBy('vendedor_id')->get()->keyBy('vendedor_id');
+
+        return \App\Models\Vendedor::orderBy('nombre')->get()->map(function ($vendedor) use ($metas, $cobros) {
+            $cobro = $cobros->get($vendedor->id);
+            $meta = (float) ($metas->get($vendedor->id)?->meta_cobros ?? 0);
+
+            return [
+                'id' => $vendedor->id, 'nombre' => $vendedor->nombre, 'meta_mensual' => $meta,
+                'total_pagos' => (int) ($cobro?->cantidad ?? 0), 'total_cobrado' => (float) ($cobro?->total ?? 0),
+                'total_capital' => (float) ($cobro?->capital ?? 0), 'total_interes' => (float) ($cobro?->interes_mora ?? 0),
+                'porcentaje_meta' => $meta > 0 ? round((float) ($cobro?->total ?? 0) / $meta * 100, 2) : null,
+            ];
+        })->all();
     }
 
     /**

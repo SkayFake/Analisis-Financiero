@@ -1,3 +1,7 @@
+## Control de vendedores
+
+Consulte [Flujo comercial y de cartera](docs/control-vendedores.md) para metas, ventas, clientes morosos, gestiones, reasignaciones e informes.
+
 ## Datos para probar el ERP
 
 Consulte [Pruebas integrales](docs/pruebas-integrales.md) para cargar los módulos con escenarios QA, acceder con distintos perfiles y comprobar créditos, pagos, incobrables, inventario, ventas y activos sin Hacienda.

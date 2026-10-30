@@ -61,6 +61,13 @@
         </div>
     </div>
 
+    <div class="card" style="margin-bottom:1rem;"><div class="card-body" style="display:flex;gap:2rem;flex-wrap:wrap;">
+        <div><strong>Vendedor de origen:</strong> {{ $credito->vendedorOrigen?->nombre ?? 'No documentado' }}@if($credito->vendedor_origen_reconstruido) <small>(atribución histórica reconstruida)</small>@endif</div>
+        <div><strong>Responsable actual de cartera:</strong>
+            @if($credito->vendedor) @can('viewAny',\App\Models\Vendedor::class)<a href="{{ route('vendedores.show',$credito->vendedor) }}">{{ $credito->vendedor->nombre }}</a>@else {{ $credito->vendedor->nombre }} @endcan
+            @else Sin asignar @can('assign',\App\Models\Vendedor::class)<a href="{{ route('vendedores.pendientes') }}">Documentar responsable</a>@endcan @endif
+        </div>
+    </div></div>
     {{-- Alerta de pendiente de aprobación --}}
     @if($credito->estado === 'pendiente_aprobacion')
     <div class="alert alert-warning" style="margin-bottom: 1.5rem;">

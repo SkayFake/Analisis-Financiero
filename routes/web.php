@@ -71,5 +71,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Configuraciones Generales
     Route::get('/configuracion/catalogos', \App\Livewire\Configuracion\CatalogosDashboard::class)->name('configuracion.catalogos');
-    Route::get('/vendedores', \App\Livewire\Vendedores\VendedoresDashboard::class)->name('vendedores.index');
+    Route::get('/vendedores', \App\Livewire\Vendedores\VendedoresDashboard::class)->middleware('can:viewAny,App\Models\Vendedor')->name('vendedores.index');
+    Route::get('/vendedores/exportar', [\App\Http\Controllers\VendedorController::class, 'exportar'])->name('vendedores.exportar');
+    Route::get('/vendedores/pendientes', [\App\Http\Controllers\VendedorController::class, 'pendientes'])->name('vendedores.pendientes');
+    Route::get('/vendedores/{vendedor}', [\App\Http\Controllers\VendedorController::class, 'show'])->name('vendedores.show');
+    Route::get('/vendedores/{vendedor}/exportar', [\App\Http\Controllers\VendedorController::class, 'exportar'])->name('vendedores.reporte');
+    Route::post('/vendedores/{vendedor}/metas', [\App\Http\Controllers\VendedorController::class, 'meta'])->name('vendedores.metas');
+    Route::post('/creditos/{credito}/responsable', [\App\Http\Controllers\VendedorController::class, 'reasignar'])->name('creditos.responsable');
+    Route::post('/creditos/{credito}/gestiones', [\App\Http\Controllers\VendedorController::class, 'gestion'])->name('creditos.gestiones');
+    Route::post('/ventas/{venta}/vendedor', [\App\Http\Controllers\VendedorController::class, 'regularizarVenta'])->name('ventas.vendedor');
+    Route::post('/pagos/{pago}/vendedor', [\App\Http\Controllers\VendedorController::class, 'regularizarPago'])->name('pagos.vendedor');
 });

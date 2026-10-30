@@ -47,6 +47,7 @@ class PruebasIntegralesSeederTest extends TestCase
         'movimientos_inventario', 'detalle_movimientos', 'ventas', 'detalle_ventas',
         'instituciones', 'unidades', 'categoria_activos', 'activos_fijos', 'depreciaciones',
         'configuracion_dte', 'lotes_contingencia', 'eventos_invalidacion',
+        'vendedor_metas', 'vendedor_auditorias', 'gestiones_cobro',
     ];
 
     protected function setUp(): void

@@ -173,7 +173,7 @@ class CorreccionesIntegridadTest extends TestCase
     public function test_usuario_solo_lectura_no_puede_facturar_contado(): void
     {
         [$bodega, $producto, $linea] = $this->carrito();
-        Livewire::actingAs($this->usuario(['facturacion.view']))->test(PuntoVenta::class)
+        Livewire::actingAs($this->usuario(['facturacion.view']))->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertForbidden();
         $this->assertDatabaseCount('ventas', 0);
@@ -184,7 +184,7 @@ class CorreccionesIntegridadTest extends TestCase
     {
         [$bodega, $producto, $linea] = $this->carrito();
         $user = $this->usuario(['facturacion.emitir']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $this->assertDatabaseHas('ventas', ['total_pagar' => 10, 'condicion_operacion' => '1']);
@@ -197,7 +197,7 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $linea['cantidad'] = -2;
         $user = $this->usuario(['facturacion.emitir']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasErrors(['detalles.0.cantidad'])->assertSee('Revise los datos de la venta:');
         try {
@@ -215,12 +215,12 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $user = $this->usuario(['facturacion.emitir']);
         $linea['precio_unitario'] = 1;
-        Livewire::actingAs($user)->test(PuntoVenta::class)
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasErrors(['detalles.0.precio_unitario']);
         $this->assertDatabaseCount('ventas', 0);
         $user->givePermissionTo('facturacion.modificar_precio');
-        Livewire::actingAs($user->fresh())->test(PuntoVenta::class)
+        Livewire::actingAs($user->fresh())->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $this->assertDatabaseHas('ventas', ['total_pagar' => 1]);
@@ -230,7 +230,7 @@ class CorreccionesIntegridadTest extends TestCase
     public function test_tipo_numerico_no_permite_omitir_el_permiso_de_credito(): void
     {
         [$bodega, $producto, $linea] = $this->carrito();
-        Livewire::actingAs($this->usuario(['facturacion.emitir']))->test(PuntoVenta::class)
+        Livewire::actingAs($this->usuario(['facturacion.emitir']))->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '11')->set('condicion_operacion', 2)
             ->set('bodega_id', $bodega->id)->set('detalles', [$linea])->call('facturar')->assertForbidden();
         $this->assertDatabaseCount('ventas', 0);
@@ -307,9 +307,9 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $base = $this->credito();
         $user = $this->usuario(['facturacion.emitir', 'creditos.create', 'creditos.view', 'cobros.process']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '03')->set('condicion_operacion', '2')
-            ->set('cliente_id', $base->cliente_id)->set('condicion_credito_id', $base->condicion_credito_id)
+            ->set('cliente_id', $base->cliente_id)->set('vendedor_id', \App\Models\Vendedor::where('codigo', 'REV-VND')->firstOrFail()->id)->set('condicion_credito_id', $base->condicion_credito_id)
             ->set('numero_cuotas', 2)->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $venta = Venta::latest('id')->first();

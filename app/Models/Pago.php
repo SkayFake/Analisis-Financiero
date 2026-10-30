@@ -10,7 +10,7 @@ class Pago extends Model
         'credito_id', 'cuota_id', 'numero_recibo', 'fecha_pago',
         'monto_total', 'abono_capital', 'pago_interes', 'pago_comision',
         'pago_mora', 'saldo_despues', 'forma_pago', 'referencia',
-        'observaciones', 'recibido_por',
+        'observaciones', 'recibido_por', 'vendedor_id', 'vendedor_reconstruido', 'vendedor_revisado_at',
     ];
 
     protected $casts = [
@@ -21,12 +21,16 @@ class Pago extends Model
         'pago_mora' => 'decimal:2',
         'saldo_despues' => 'decimal:2',
         'fecha_pago' => 'date',
+        'vendedor_reconstruido' => 'boolean',
+        'vendedor_revisado_at' => 'datetime',
     ];
 
     public function credito()
     {
         return $this->belongsTo(Credito::class);
     }
+
+    public function vendedor() { return $this->belongsTo(Vendedor::class); }
 
     public function cuota()
     {

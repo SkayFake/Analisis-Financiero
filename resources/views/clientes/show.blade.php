@@ -181,7 +181,7 @@
                 <div>
                     <div class="form-label" style="color: var(--neutral-400);">Gestor / Vendedor Responsable</div>
                     <div style="font-weight: 600; color: var(--neutral-900); font-size: 0.9375rem;">
-                        {{ $cliente->vendedor?->nombre ?? 'Sin Asesor Asignado' }}
+                        @if($cliente->vendedor) @can('viewAny',\App\Models\Vendedor::class)<a href="{{ route('vendedores.show',$cliente->vendedor) }}">{{ $cliente->vendedor->nombre }}</a>@else {{ $cliente->vendedor->nombre }} @endcan @else Sin Asesor Asignado @endif
                     </div>
                 </div>
                 <div>

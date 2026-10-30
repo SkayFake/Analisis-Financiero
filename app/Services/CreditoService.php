@@ -200,6 +200,16 @@ class CreditoService
 
             $condicion = CondicionCredito::findOrFail($condiciones['condicion_credito_id']);
             $cliente = Cliente::findOrFail($ventaLocked->cliente_id);
+            $vendedorId = $condiciones['vendedor_id'] ?? $ventaLocked->vendedor_id ?? $cliente->vendedor_id;
+            if ($vendedorId !== null && (!is_scalar($vendedorId) || !ctype_digit((string) $vendedorId)
+                || !\App\Models\Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first())) {
+                throw new InvalidArgumentException('El responsable del crédito debe ser un vendedor activo.');
+            }
+            $carteraId = $condiciones['cartera_id'] ?? ((int) $cliente->vendedor_id === (int) $vendedorId ? $cliente->cartera_id : null);
+            if ($carteraId !== null && !\App\Models\Cartera::whereKey($carteraId)->where('activa', true)
+                ->where(fn ($q) => $q->whereNull('vendedor_id')->orWhere('vendedor_id', $vendedorId))->exists()) {
+                throw new InvalidArgumentException('La cartera debe estar activa y corresponder al responsable del crédito.');
+            }
             $numeroCuotas = (int) ($condiciones['numero_cuotas'] ?? 1);
 
             $fechaPrimeraCuota = isset($condiciones['fecha_primera_cuota'])
@@ -255,8 +265,9 @@ class CreditoService
                 'cliente_id'           => $ventaLocked->cliente_id,
                 'venta_id'             => $ventaLocked->id,
                 'condicion_credito_id' => $condicion->id,
-                'vendedor_id'          => $condiciones['vendedor_id'] ?? $ventaLocked->vendedor_id ?? null,
-                'cartera_id'           => $condiciones['cartera_id'] ?? null,
+                'vendedor_id'          => $vendedorId,
+                'vendedor_origen_id'   => $ventaLocked->vendedor_id,
+                'cartera_id'           => $carteraId,
                 'politica_cobro_id'    => $condiciones['politica_cobro_id'] ?? null,
                 'monto_original'       => $montoFactura,
                 'saldo_actual'         => $montoFactura,
@@ -290,6 +301,9 @@ class CreditoService
             if ($autoAprobado) {
                 $this->generarPlanPago($credito);
             }
+
+            if ($credito->vendedor) app(VendedorService::class)->auditar($credito->vendedor, 'credito_registrado', 'creditos', $credito->id, null,
+                $credito->only(['numero', 'venta_id', 'vendedor_id', 'vendedor_origen_id', 'monto_original', 'estado']), 'Asignación inicial del crédito comercial', auth()->user());
 
             return $credito;
         });
@@ -592,6 +606,8 @@ class CreditoService
                 'referencia'     => $datos['referencia'] ?? null,
                 'observaciones'  => $datos['observaciones'] ?? null,
                 'recibido_por'   => $datos['recibido_por'] ?? auth()->id(),
+                'vendedor_id'    => $credito->vendedor_id,
+                'vendedor_reconstruido' => false,
             ]);
 
             // Guardar aplicaciones individuales y actualizar cuotas

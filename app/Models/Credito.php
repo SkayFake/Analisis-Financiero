@@ -31,6 +31,7 @@ class Credito extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'vendedor_origen_id',
         'numero',
         'cliente_id',
         'vendedor_id',
@@ -63,6 +64,7 @@ class Credito extends Model
     ];
 
     protected $casts = [
+        'vendedor_origen_reconstruido' => 'boolean',
         'monto_original'      => 'decimal:2',
         'saldo_actual'        => 'decimal:2',
         'interes_acumulado'   => 'decimal:2',
@@ -106,6 +108,9 @@ class Credito extends Model
     {
         return $this->belongsTo(Vendedor::class);
     }
+
+    public function vendedorOrigen() { return $this->belongsTo(Vendedor::class, 'vendedor_origen_id'); }
+    public function gestionesCobro() { return $this->hasMany(GestionCobro::class)->orderByDesc('id'); }
 
     public function cartera()
     {

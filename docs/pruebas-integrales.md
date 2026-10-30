@@ -115,9 +115,13 @@ Una institución QA, dos unidades, cuatro categorías propias y once activos: nu
 
 El servicio calcula el historial mensual hasta el mes anterior, limitado a los activos QA; los anteriores quedan intactos. El mes actual queda disponible para probar el cálculo desde la interfaz. Las bajas guardan fecha y motivo.
 
+## Control de vendedores
+
+El conjunto incluye metas mensuales, bitácora y gestiones. La extensión se añade una sola vez si QA ya existía y no restablece sus movimientos. Consulte [Control de vendedores](control-vendedores.md) para probar QA-META, reasignaciones que conservan recibos anteriores y promesas cumplidas, pendientes e incumplidas.
+
 ## Tablas y pruebas automatizadas
 
-Se pueblan **41 tablas de negocio y permisos**: usuarios y roles/permisos; catálogos de cobros; clientes y datos jurídicos; créditos, cuotas, pagos, aplicaciones, fiadores, clasificaciones, incobrables, refinanciamientos y embargos; catálogos de inventario, existencias, movimientos y detalles; ventas y detalles; instituciones, unidades, categorías de activos, activos y depreciaciones; configuración DTE, contingencias e invalidaciones.
+Se pueblan **44 tablas de negocio y permisos**: usuarios y roles/permisos; catálogos de cobros; clientes y datos jurídicos; créditos, cuotas, pagos, aplicaciones, fiadores, clasificaciones, incobrables, refinanciamientos y embargos; catálogos de inventario, existencias, movimientos y detalles; ventas y detalles; instituciones, unidades, categorías de activos, activos y depreciaciones; configuración DTE, contingencias e invalidaciones.
 
 Las tablas de infraestructura —migraciones, caché, sesiones, trabajos y trabajos fallidos— se dejan a Laravel. No se insertan sesiones falsas ni trabajos que puedan ejecutarse. `productos_credito` fue eliminada por las migraciones comerciales; su sustituto es `condiciones_credito`.
 

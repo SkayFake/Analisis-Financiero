@@ -118,6 +118,10 @@ class CreditoController extends Controller
             return back()->withErrors(['venta_id' => "La factura {$venta->numero_control} ya tiene un crédito asociado."]);
         }
 
+        if (empty($validated['vendedor_id']) && !$venta->vendedor_id && !$venta->cliente?->vendedor_id) {
+            return back()->withInput()->withErrors(['vendedor_id' => 'Seleccione un responsable activo para el nuevo crédito.']);
+        }
+
         $condicion = CondicionCredito::findOrFail($validated['condicion_credito_id']);
         if (!$condicion->activa) {
             return back()->withErrors(['condicion_credito_id' => "La condición '{$condicion->nombre}' está inactiva y no admite nuevos créditos."]);
@@ -159,6 +163,7 @@ class CreditoController extends Controller
             'venta.detalles.producto',
             'condicionCredito',
             'vendedor',
+            'vendedorOrigen',
             'cartera',
             'cuotas.aplicacionesPago',
             'pagos.recibidoPor',

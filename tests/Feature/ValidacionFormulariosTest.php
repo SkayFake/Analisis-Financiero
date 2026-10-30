@@ -131,11 +131,12 @@ class ValidacionFormulariosTest extends TestCase
 
     public function test_vendedor_telefono_codigo_y_meta_se_validan_al_crear_y_editar(): void
     {
+        auth()->user()->givePermissionTo(['vendedores.view', 'vendedores.manage', 'vendedores.metas']);
         $form = Livewire::test(VendedoresDashboard::class)->call('create')->set('codigo', 'VEN-1')->set('nombre', 'Vendedor')
             ->set('telefono', 'abcd')->set('meta_mensual', '1.234')->call('save')->assertHasErrors(['telefono', 'meta_mensual']);
         $form->set('telefono', '71234567')->set('meta_mensual', 100)->call('save')->assertHasNoErrors();
         $vendedor = Vendedor::first();
-        $form->call('edit', $vendedor->id)->set('telefono', '+50361234567')->call('save')->assertHasNoErrors();
+        $form->call('edit', $vendedor->id)->set('telefono', '+50361234567')->set('motivo', 'Actualización del teléfono de contacto')->call('save')->assertHasNoErrors();
         $this->assertSame('6123-4567', $vendedor->fresh()->telefono);
         $form->call('create')->set('codigo', 'VEN-1')->set('nombre', 'Duplicado')->call('save')->assertHasErrors('codigo');
         $this->assertDatabaseCount('vendedores', 1);

@@ -152,12 +152,20 @@
 
                         <div class="form-group">
                             <label class="form-label">Gestor / Asesor</label>
+                            @can('assign', \App\Models\Vendedor::class)
                             <select name="vendedor_id" class="form-select">
                                 <option value="">(Sin asignar)</option>
+                                @if($cliente->vendedor && !$cliente->vendedor->activo)<option value="{{ $cliente->vendedor_id }}" selected>{{ $cliente->vendedor->nombre }} (inactivo)</option>@endif
                                 @foreach($vendedores as $v)
                                     <option value="{{ $v->id }}" {{ old('vendedor_id', $cliente->vendedor_id) == $v->id ? 'selected' : '' }}>{{ $v->nombre }}</option>
                                 @endforeach
                             </select>
+                            <label class="form-label" for="motivo-asignacion">Motivo si cambia el asesor</label>
+                            <textarea id="motivo-asignacion" name="motivo_asignacion" class="form-textarea" minlength="10" maxlength="2000" rows="2">{{ old('motivo_asignacion') }}</textarea>
+                            <p class="form-hint">El cambio se aplica a la ficha y nuevas operaciones. Los créditos existentes se reasignan por separado.</p>
+                            @else
+                            <div>{{ $cliente->vendedor?->nombre ?? 'Sin asignar' }}</div>
+                            @endcan
                         </div>
 
                         <div class="form-group">

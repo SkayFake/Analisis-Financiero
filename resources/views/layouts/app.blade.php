@@ -131,6 +131,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Configuración</div>
 
+                    @can('viewAny', \App\Models\Vendedor::class)
                     <a href="{{ route('vendedores.index') }}" class="sidebar-link {{ request()->routeIs('vendedores.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -140,8 +141,9 @@
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                         </span>
-                        <span class="sidebar-link-text">Vendedores</span>
+                        <span class="sidebar-link-text">Control de vendedores</span>
                     </a>
+                    @endcan
 
                     <a href="{{ route('configuracion.catalogos') }}" class="sidebar-link {{ request()->routeIs('configuracion.catalogos') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">

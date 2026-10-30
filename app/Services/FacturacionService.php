@@ -50,6 +50,7 @@ class FacturacionService
             'condicion_operacion' => 'required|string|in:1,2',
             'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
             'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
+            'vendedor_id' => ['nullable', 'integer', Rule::exists('vendedores', 'id')->where('activo', true)],
             'detalles' => 'required|array|min:1|max:100',
             'detalles.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)],
             'detalles.*.cantidad' => 'required|numeric|min:0.01|max:999999.9999|decimal:0,4',
@@ -58,6 +59,10 @@ class FacturacionService
 
         return DB::transaction(function () use ($datosVenta, $detalles, $usuarioId) {
             $usuario = User::findOrFail($usuarioId);
+            $vendedorId = $datosVenta['vendedor_id'] ?? (!empty($datosVenta['cliente_id']) ? \App\Models\Cliente::find($datosVenta['cliente_id'])?->vendedor_id : null);
+            if ($vendedorId && !\App\Models\Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first()) {
+                throw ValidationException::withMessages(['vendedor_id' => 'Seleccione un vendedor activo para la venta.']);
+            }
             $productos = Producto::whereIn('id', array_column($detalles, 'producto_id'))->sharedLock()->get()->keyBy('id');
             $modificaPrecio = $usuario->hasRole('super-admin') || $usuario->can('facturacion.modificar_precio');
             $total = 0;
@@ -91,7 +96,7 @@ class FacturacionService
             // 1. Crear el registro de Venta
             $venta = Venta::create([
                 'cliente_id' => $datosVenta['cliente_id'] ?? null,
-                'vendedor_id' => $datosVenta['vendedor_id'] ?? null,
+                'vendedor_id' => $vendedorId,
                 'tipo_documento' => $datosVenta['tipo_documento'], // 01 FCF, 03 CCF, 11 Ticket
                 'codigo_generacion' => strtoupper((string) Str::uuid()),
                 'numero_control' => 'DTE-'. $datosVenta['tipo_documento'] . '-' . str_pad(Venta::where('tipo_documento', $datosVenta['tipo_documento'])->count() + 1, 15, '0', STR_PAD_LEFT),
@@ -166,6 +171,12 @@ class FacturacionService
                 ]);
             } elseif (in_array($venta->tipo_documento, ['01', '03', '05', '06'])) {
                 $this->firmarYTransmitir($venta);
+            }
+
+            if ($venta->vendedor) {
+                app(VendedorService::class)->auditar($venta->vendedor, 'venta_registrada', 'ventas', $venta->id, null,
+                    $venta->only(['numero_control', 'cliente_id', 'vendedor_id', 'total_pagar', 'estado_dte', 'condicion_operacion']),
+                    'Vendedor registrado al emitir la venta', $usuario);
             }
 
             return $venta;

@@ -28,6 +28,7 @@ class PuntoVenta extends Component
     
     // Header Data
     public $cliente_id = '';
+    public $vendedor_id = '';
     public $bodega_id = 1;
     public $tipo_documento = '01'; // 01 FCF, 03 CCF, 11 Ticket, 05 NC, 06 ND
     public $condicion_operacion = '1'; // 1 Contado, 2 Crédito
@@ -77,6 +78,13 @@ class PuntoVenta extends Component
                 }
             }
         }
+    }
+
+    public function updatedClienteId($value): void
+    {
+        $this->validateOnly('cliente_id', ['cliente_id' => 'nullable|integer|exists:clientes,id']);
+        $vendedor = $value ? Cliente::find($value)?->vendedor : null;
+        $this->vendedor_id = $vendedor?->activo ? $vendedor->id : '';
     }
     
     public function updatedSearchProducto(): void
@@ -228,6 +236,7 @@ class PuntoVenta extends Component
             'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
             'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
             'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
+            'vendedor_id' => ['required', 'integer', Rule::exists('vendedores', 'id')->where('activo', true)],
         ] + ReglasFormulario::fiador();
 
         $messages = [
@@ -297,6 +306,7 @@ class PuntoVenta extends Component
             
             $datosVenta = [
                 'cliente_id'          => $this->cliente_id ?: null,
+                'vendedor_id'         => $this->vendedor_id,
                 'tipo_documento'      => $this->tipo_documento,
                 'condicion_operacion' => $this->condicion_operacion,
                 'bodega_id'           => $this->bodega_id ?: 1,
@@ -342,6 +352,7 @@ class PuntoVenta extends Component
             'docsTransmitidos' => $docsTransmitidos,
             'docsLocales' => $docsLocales,
             'clienteSeleccionado' => $clienteSeleccionado,
+            'vendedores' => \App\Models\Vendedor::activos()->orderBy('nombre')->get(),
             'condiciones' => $this->condicionesCredito,
             'condicionSeleccionada' => $this->condicionSeleccionada,
         ])->layout('layouts.app', ['title' => 'Punto de Venta DTE']);

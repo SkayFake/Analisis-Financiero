@@ -13,7 +13,7 @@ class PagoController extends Controller
     {
         Gate::authorize('view', $credito);
         abort_unless($pago->credito_id === $credito->id, 404);
-        $pago->load(['aplicaciones.cuota', 'cuota', 'recibidoPor']);
+        $pago->load(['aplicaciones.cuota', 'cuota', 'recibidoPor', 'vendedor']);
         $credito->load(['cliente' => fn ($query) => $query->withTrashed(), 'venta']);
 
         return Pdf::loadView('pagos.recibo', compact('credito', 'pago'))

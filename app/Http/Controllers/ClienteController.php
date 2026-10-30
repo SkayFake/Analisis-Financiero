@@ -57,9 +57,11 @@ class ClienteController extends Controller
     {
         $validated = $request->validated();
         $cliente = DB::transaction(function () use ($validated) {
-            $datos = Arr::except($validated, ClienteRequest::JURIDICOS);
+            $datos = Arr::except($validated, [...ClienteRequest::JURIDICOS, 'motivo_asignacion']);
             $datos['codigo'] = Cliente::generarCodigo($datos['tipo']);
             $cliente = Cliente::create($datos);
+            if ($cliente->vendedor) app(\App\Services\VendedorService::class)->auditar($cliente->vendedor, 'asignacion_cliente', 'clientes', $cliente->id, null,
+                ['vendedor_id' => $cliente->vendedor_id], 'Asignación inicial al registrar el cliente', auth()->user());
             if ($cliente->tipo === 'juridica') {
                 $cliente->datosJuridicos()->create(array_merge([
                     'balance_general' => ClienteJuridico::estructuraBalanceGeneral(),
@@ -98,7 +100,13 @@ class ClienteController extends Controller
     {
         $validated = $request->validated();
         DB::transaction(function () use ($validated, $cliente) {
-            $cliente->update(Arr::except($validated, ClienteRequest::JURIDICOS));
+            $cliente = Cliente::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            if (array_key_exists('vendedor_id', $validated) && (int) $validated['vendedor_id'] !== (int) $cliente->vendedor_id) {
+                \Illuminate\Support\Facades\Gate::authorize('assign', \App\Models\Vendedor::class);
+                app(\App\Services\VendedorService::class)->asignarCliente($cliente, $validated['vendedor_id'] ? (int) $validated['vendedor_id'] : null,
+                    $validated['motivo_asignacion'] ?? '', auth()->user(), isset($validated['cartera_id']) ? (int) $validated['cartera_id'] : null);
+            }
+            $cliente->update(Arr::except($validated, [...ClienteRequest::JURIDICOS, 'vendedor_id', 'motivo_asignacion']));
             if ($cliente->tipo === 'juridica') {
                 $cliente->datosJuridicos()->updateOrCreate([], Arr::only($validated, ClienteRequest::JURIDICOS));
             }

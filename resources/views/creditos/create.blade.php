@@ -199,9 +199,9 @@
                     </h3>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label class="form-label">Gestor / Asesor</label>
+                            <label class="form-label">Responsable de cartera</label>
                             <select name="vendedor_id" class="form-select">
-                                <option value="">(Sin asignar)</option>
+                                <option value="">Usar vendedor de la venta o asesor del cliente</option>
                                 @foreach($vendedores as $v)
                                     <option value="{{ $v->id }}" {{ old('vendedor_id') == $v->id ? 'selected' : '' }}>{{ $v->nombre }}</option>
                                 @endforeach

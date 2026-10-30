@@ -55,7 +55,10 @@ class ClienteRequest extends FormRequest
             'egresos' => 'nullable|numeric|min:0|max:999999999999.99|decimal:0,2',
             'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')->where('activa', true)],
             'cartera_id' => ['nullable', 'integer', Rule::exists('carteras', 'id')->where('activa', true)],
-            'vendedor_id' => ['nullable', 'integer', Rule::exists('vendedores', 'id')->where('activo', true)],
+            'vendedor_id' => ['nullable', 'integer', Rule::exists('vendedores', 'id')->where(fn ($q) => $q->where('activo', true)
+                ->when($cliente instanceof Cliente && is_scalar($this->input('vendedor_id')) && (string) $this->input('vendedor_id') === (string) $cliente->vendedor_id,
+                    fn ($q) => $q->orWhere('id', $cliente->vendedor_id)))],
+            'motivo_asignacion' => 'nullable|string|min:10|max:2000',
         ];
         if ($tipo === 'juridica') {
             $rules += [
@@ -92,6 +95,15 @@ class ClienteRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator) {
+            $cliente = $this->route('cliente');
+            $cambiaVendedor = $cliente instanceof Cliente && $this->exists('vendedor_id')
+                && (int) $this->input('vendedor_id') !== (int) $cliente->vendedor_id;
+            if ($cambiaVendedor && !$this->filled('motivo_asignacion')) $validator->errors()->add('motivo_asignacion', 'Indique el motivo de la reasignación del cliente.');
+            if (($cambiaVendedor || !$cliente || ($this->exists('cartera_id') && (int) $this->cartera_id !== (int) $cliente->cartera_id)) && $this->filled('cartera_id') && !$validator->errors()->hasAny(['cartera_id', 'vendedor_id'])) {
+                $responsable = $this->exists('vendedor_id') ? $this->input('vendedor_id') : $cliente?->vendedor_id;
+                $cartera = \App\Models\Cartera::find($this->input('cartera_id'));
+                if ($cartera?->vendedor_id && (int) $cartera->vendedor_id !== (int) $responsable) $validator->errors()->add('cartera_id', 'La cartera debe corresponder al asesor seleccionado.');
+            }
             foreach (['dui', 'nit'] as $campo) {
                 $valor = $this->input($campo);
                 if (is_string($valor) && $valor !== '' && ! $validator->errors()->has($campo)) {

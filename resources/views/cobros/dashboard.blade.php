@@ -103,10 +103,10 @@
                 </div>
             </div>
             <div class="stat-card-value" style="color: var(--success-600);">
-                ${{ number_format($metricas['cobros_mes_actual']['total_cobrado'] ?? 0, 2) }}
+                ${{ number_format($metricas['cobros_mes_actual'] ?? 0, 2) }}
             </div>
             <div class="stat-card-change up">
-                Hoy: ${{ number_format($metricas['cobros_hoy']['total_cobrado'] ?? 0, 2) }}
+                Hoy: ${{ number_format($metricas['cobros_hoy'] ?? 0, 2) }}
             </div>
         </div>
 
@@ -211,7 +211,7 @@
                     <thead>
                         <tr>
                             <th style="min-width: 200px;">Gestor / Vendedor</th>
-                            <th class="text-right" style="min-width: 120px; text-align: right;">Meta Mensual</th>
+                            <th class="text-right" style="min-width: 120px; text-align: right;">Meta de cobros</th>
                             <th class="text-right" style="min-width: 130px; text-align: right;">Total Recuperado</th>
                             <th class="text-right" style="min-width: 120px; text-align: right;">Abono Capital</th>
                             <th class="text-right" style="min-width: 120px; text-align: right;">Intereses / Mora</th>
@@ -223,7 +223,7 @@
                         <tr>
                             <td>
                                 <div style="font-weight: 600; color: var(--neutral-900); font-size: 0.9375rem;">
-                                    {{ $v['nombre'] }}
+                                    @can('viewAny', \App\Models\Vendedor::class)<a href="{{ route('vendedores.show', $v['id']) }}">{{ $v['nombre'] }}</a>@else {{ $v['nombre'] }} @endcan
                                 </div>
                                 <div style="font-size: 0.75rem; color: var(--neutral-400);">
                                     {{ $v['total_pagos'] }} pagos gestionados
@@ -247,7 +247,7 @@
                                         <div style="height: 100%; width: {{ min(100, $v['porcentaje_meta']) }}%; background: var(--{{ $v['porcentaje_meta'] >= 100 ? 'success' : ($v['porcentaje_meta'] >= 75 ? 'primary' : 'warning') }}-500); border-radius: var(--radius-full); transition: width 0.4s ease;"></div>
                                     </div>
                                     <span style="font-size: 0.8125rem; font-weight: 700; min-width: 48px; text-align: right; color: var(--{{ $v['porcentaje_meta'] >= 100 ? 'success' : ($v['porcentaje_meta'] >= 75 ? 'primary' : 'warning') }}-600);">
-                                        {{ number_format($v['porcentaje_meta'], 1) }}%
+                                        {{ $v['porcentaje_meta'] !== null ? number_format($v['porcentaje_meta'], 1).'%' : 'Sin objetivo' }}
                                     </span>
                                 </div>
                             </td>

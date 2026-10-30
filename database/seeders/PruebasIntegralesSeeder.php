@@ -84,6 +84,7 @@ class PruebasIntegralesSeeder extends Seeder
                     DB::select("SELECT pg_advisory_xact_lock(hashtext('PruebasIntegralesSeeder:v1'))");
                 }
                 if (User::where('email', 'qa.admin@example.test')->exists()) {
+                    $this->call(VendedoresPruebasSeeder::class);
                     return false;
                 }
                 $this->usuarios();
@@ -93,6 +94,7 @@ class PruebasIntegralesSeeder extends Seeder
                 $this->creditos();
                 $this->activos();
                 $this->simulacionesDte();
+                $this->call(VendedoresPruebasSeeder::class);
 
                 return true;
             });
@@ -121,6 +123,7 @@ class PruebasIntegralesSeeder extends Seeder
             'activos.view', 'activos.create', 'activos.edit', 'activos.baja',
             'usuarios.view', 'usuarios.create', 'usuarios.edit', 'usuarios.delete',
             'roles.manage', 'configuracion.manage', 'reportes.view', 'reportes.export',
+            'vendedores.view', 'vendedores.manage', 'vendedores.metas', 'vendedores.assign', 'vendedores.gestionar', 'vendedores.export', 'vendedores.audit',
         ];
         foreach ($permisos as $permiso) {
             Permission::firstOrCreate(['name' => $permiso, 'guard_name' => 'web']);

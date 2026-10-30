@@ -57,72 +57,74 @@ class RolesAndPermissionsSeeder extends Seeder
             'roles.manage', 'configuracion.manage', 'reportes.view', 'reportes.export',
         ];
 
+        $vendedorPermisos = ['vendedores.view', 'vendedores.manage', 'vendedores.metas', 'vendedores.assign', 'vendedores.gestionar', 'vendedores.export', 'vendedores.audit'];
+
         // Crear todos los permisos
         $todosPermisos = array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
             $incobrablePermisos, $inventarioPermisos, $facturacionPermisos,
-            $activoPermisos, $sistemaPermisos
+            $activoPermisos, $sistemaPermisos, $vendedorPermisos
         );
 
         $todosPermisos[] = 'facturacion.modificar_precio';
 
         foreach ($todosPermisos as $permiso) {
-            Permission::create(['name' => $permiso]);
+            Permission::firstOrCreate(['name' => $permiso]);
         }
 
         // ─── Roles ────────────────────────────────────────────
 
         // Super Admin - acceso total
-        $superAdmin = Role::create(['name' => 'super-admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
         // Administrador - gestión de módulos
-        $admin = Role::create(['name' => 'admin']);
+        $admin = Role::firstOrCreate(['name' => 'admin']);
         $admin->givePermissionTo(array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
-            $incobrablePermisos, $sistemaPermisos
+            $incobrablePermisos, $sistemaPermisos, $vendedorPermisos
         ));
 
         // Gerente de Cobros
-        $cobrosManager = Role::create(['name' => 'cobros-manager']);
+        $cobrosManager = Role::firstOrCreate(['name' => 'cobros-manager']);
         $cobrosManager->givePermissionTo(array_merge(
             $clientePermisos, $creditoPermisos, $cobroPermisos,
-            $incobrablePermisos, ['reportes.view', 'reportes.export']
+            $incobrablePermisos, $vendedorPermisos, ['reportes.view', 'reportes.export']
         ));
 
         // Agente de Cobros
-        $cobrosAgent = Role::create(['name' => 'cobros-agent']);
+        $cobrosAgent = Role::firstOrCreate(['name' => 'cobros-agent']);
         $cobrosAgent->givePermissionTo([
             'clientes.view', 'clientes.create', 'clientes.edit',
             'creditos.view', 'creditos.create',
             'cobros.view', 'cobros.process',
-            'incobrables.view',
+            'incobrables.view', 'vendedores.view', 'vendedores.gestionar',
         ]);
 
         // Gerente de Inventarios
-        $inventarioManager = Role::create(['name' => 'inventario-manager']);
+        $inventarioManager = Role::firstOrCreate(['name' => 'inventario-manager']);
         $inventarioManager->givePermissionTo(array_merge(
             $inventarioPermisos, ['reportes.view']
         ));
 
         // Operador de Facturación
-        $facturacionOperator = Role::create(['name' => 'facturacion-operator']);
+        $facturacionOperator = Role::firstOrCreate(['name' => 'facturacion-operator']);
         $facturacionOperator->givePermissionTo(array_merge(
             $facturacionPermisos, ['clientes.view', 'inventario.view', 'creditos.view']
         ));
 
         // Gerente de Activos
-        $activosManager = Role::create(['name' => 'activos-manager']);
+        $activosManager = Role::firstOrCreate(['name' => 'activos-manager']);
         $activosManager->givePermissionTo(array_merge(
             $activoPermisos, ['reportes.view']
         ));
 
         // Visor (solo lectura)
-        $viewer = Role::create(['name' => 'viewer']);
+        $viewer = Role::firstOrCreate(['name' => 'viewer']);
         $viewer->givePermissionTo([
             'clientes.view', 'creditos.view', 'cobros.view',
             'incobrables.view', 'inventario.view', 'facturacion.view',
-            'activos.view', 'reportes.view',
+            'activos.view', 'reportes.view', 'vendedores.view',
         ]);
     }
 }

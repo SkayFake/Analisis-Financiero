@@ -48,6 +48,7 @@
         </p>
     </div>
 
+    <p><strong>Vendedor de la venta:</strong> {{ $venta->vendedor?->nombre ?? 'No documentado' }}</p>
     @if($venta->cliente)
     <table class="info-table">
         <tr>

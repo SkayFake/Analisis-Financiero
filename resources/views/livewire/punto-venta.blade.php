@@ -498,6 +498,17 @@
                 </div>
                 @endif
 
+                <div class="form-group">
+                    <label class="form-label" for="vendedor-venta">Vendedor de la venta <span class="required">*</span></label>
+                    <select id="vendedor-venta" wire:model="vendedor_id" class="form-select" required>
+                        <option value="">Seleccione un vendedor activo</option>
+                        @foreach($vendedores as $vendedor)
+                            <option value="{{ $vendedor->id }}">{{ $vendedor->codigo }} — {{ $vendedor->nombre }}</option>
+                        @endforeach
+                    </select>
+                    @error('vendedor_id')<span class="form-error">{{ $message }}</span>@enderror
+                    <p class="form-hint">Quedará registrado en la venta. Al seleccionar un cliente se propone su asesor actual.</p>
+                </div>
                 {{-- Receptor / Cliente --}}
                 <div class="form-group">
                     <label class="form-label">

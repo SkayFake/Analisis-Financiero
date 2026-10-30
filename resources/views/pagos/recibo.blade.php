@@ -29,6 +29,7 @@
         <tr><td><strong>Fecha del pago:</strong> {{ $pago->fecha_pago?->format('d/m/Y') }}</td><td><strong>Forma de pago:</strong> {{ ucfirst($pago->forma_pago) }}</td></tr>
         <tr><td><strong>Referencia:</strong> {{ $pago->referencia ?? 'Sin referencia' }}</td><td><strong>Recibido por:</strong> {{ $pago->recibidoPor?->name ?? 'No registrado' }}</td></tr>
     </table>
+    <p><strong>Responsable de cartera registrado en este recibo:</strong> {{ $pago->vendedor?->nombre ?? 'No documentado' }}@if($pago->vendedor_reconstruido) (atribución histórica reconstruida)@endif</p>
     <table>
         <thead><tr><th>Concepto</th><th class="money">Importe USD</th></tr></thead>
         <tbody>
