@@ -162,12 +162,17 @@ class CreditoController extends Controller
             'cartera',
             'cuotas.aplicacionesPago',
             'pagos.recibidoPor',
+            'pagos.cuota',
             'pagos.aplicaciones.cuota',
             'fiadores',
             'embargos',
             'refinanciamientoOriginal',
             'refinanciamientoNuevo',
         ]);
+
+        if (Gate::allows('viewIncobrables', Credito::class)) {
+            $credito->load(['cuentasIncobrables.declaradoPor', 'cuentasIncobrables.reactivadoPor']);
+        }
 
         $requisitosFaltantes = $credito->estado === 'pendiente_aprobacion'
             ? $this->creditoService->obtenerRequisitosFaltantes($credito)

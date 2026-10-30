@@ -39,6 +39,9 @@
             </div>
         </div>
         <div class="page-actions" style="display: flex; gap: 0.75rem;">
+            @can('declareUncollectible', $credito)
+                <button type="button" onclick="document.getElementById('modalIncobrable').style.display='flex'" class="btn btn-secondary">Trasladar a incobrables</button>
+            @endcan
             @can('processPayment', $credito)
                 <button onclick="document.getElementById('modalPago').style.display='flex'" class="btn btn-success">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -315,6 +318,7 @@
                                 <th class="text-right">Total</th>
                                 <th class="text-right">Saldo Después</th>
                                 <th>Aplicación Cuotas</th>
+                                <th>Comprobante</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -337,13 +341,14 @@
                                             </div>
                                         @endforeach
                                     @else
-                                        <span>Cuota #{{ $pago->cuota?->numero_cuota ?? '1' }}</span>
+                                        <span>{{ $pago->cuota ? 'Cuota #'.$pago->cuota->numero_cuota : 'Detalle histórico no disponible' }}</span>
                                     @endif
                                 </td>
+                                <td><a href="{{ route('creditos.pagos.recibo', [$credito, $pago]) }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" aria-label="Imprimir recibo {{ $pago->numero_recibo }}">Imprimir recibo</a></td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9">
+                                <td colspan="10">
                                     <div class="empty-state" style="padding: 1.5rem;">
                                         <p class="empty-state-text" style="margin-bottom: 0;">No se han registrado pagos.</p>
                                     </div>
@@ -356,6 +361,53 @@
             </div>
         </div>
     </div>
+
+    @can('viewIncobrables', \App\Models\Credito::class)
+        @if($credito->cuentasIncobrables->isNotEmpty())
+        <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header"><h3 class="card-title">Historial de cuentas incobrables</h3>
+                <a href="{{ route('incobrables.index', ['buscar' => $credito->numero, 'estado' => 'todas']) }}" class="btn btn-sm btn-secondary">Ver en cartera</a></div>
+            <div class="card-body">
+                @foreach($credito->cuentasIncobrables as $cuenta)
+                    <p><strong>{{ $cuenta->declarado_at?->format('d/m/Y H:i') ?? 'Fecha original no disponible' }}</strong> — {{ $cuenta->declaradoPor?->name ?? 'Responsable no disponible' }}<br>
+                        {{ $cuenta->motivo }}<br>Capital al traslado: ${{ number_format($cuenta->saldo_capital, 2) }}. Total registrado: ${{ number_format($cuenta->saldo_total, 2) }}.</p>
+                    @if($cuenta->reactivado_at)
+                        <p>Reactivado el {{ $cuenta->reactivado_at->format('d/m/Y H:i') }} por {{ $cuenta->reactivadoPor?->name ?? 'Responsable no disponible' }}: {{ $cuenta->motivo_reactivacion }}</p>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+        @endif
+    @endcan
+    @can('reactivate', $credito)
+        <div class="card" style="margin-top: 1.5rem;"><div class="card-body">
+            <h3>Reactivar crédito para cobro</h3>
+            <p>Se conserva el saldo, los pagos y el plan de cuotas. El traslado permanece en el historial de incobrables.</p>
+            <form method="POST" action="{{ route('creditos.reactivar', $credito) }}">
+                @csrf
+                <label class="form-label" for="motivo-reactivacion">Motivo</label>
+                <textarea class="form-textarea" id="motivo-reactivacion" name="motivo" rows="3" required minlength="10" maxlength="2000">{{ old('motivo') }}</textarea>
+                <button type="submit" class="btn btn-primary">Confirmar reactivación</button>
+            </form>
+        </div></div>
+    @endcan
+
+    @can('declareUncollectible', $credito)
+    <div id="modalIncobrable" class="modal-overlay" style="display: none;">
+        <div class="modal"><div class="modal-header"><h3 class="modal-title">Trasladar a cuentas incobrables</h3>
+            <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalIncobrable').style.display='none'">×</button></div>
+            <form method="POST" action="{{ route('creditos.incobrable', $credito) }}">
+                @csrf
+                <div class="modal-body">
+                    <p>El crédito {{ $credito->numero }} quedará en la cartera de incobrables. Se conservarán el saldo, las cuotas y los pagos. Para recibir nuevos pagos deberá reactivarse.</p>
+                    <label class="form-label" for="motivo-incobrable">Motivo del traslado</label>
+                    <textarea class="form-textarea" id="motivo-incobrable" name="motivo" rows="4" required minlength="10" maxlength="2000">{{ old('motivo') }}</textarea>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Confirmar traslado</button></div>
+            </form>
+        </div>
+    </div>
+    @endcan
 
     {{-- Modal: Registrar Pago --}}
     <div id="modalPago" class="modal-overlay" style="display: none;">

@@ -57,4 +57,21 @@ class CreditoPolicy
         return ($user->can('cobros.process') || $user->hasRole('super-admin'))
             && in_array($credito->estado, ['vigente', 'vencido']);
     }
+
+    public function viewIncobrables(User $user): bool
+    {
+        return $user->can('incobrables.view') || $user->hasRole('super-admin');
+    }
+
+    public function declareUncollectible(User $user, Credito $credito): bool
+    {
+        return ($user->can('incobrables.classify') || $user->hasRole('super-admin'))
+            && in_array($credito->estado, ['vigente', 'vencido']);
+    }
+
+    public function reactivate(User $user, Credito $credito): bool
+    {
+        return ($user->can('incobrables.reactivate') || $user->hasRole('super-admin'))
+            && $credito->estado === 'incobrable';
+    }
 }

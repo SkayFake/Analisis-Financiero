@@ -8,6 +8,9 @@
             <p class="page-subtitle">Monitoreo de morosidad, metas de cobranza y reclasificación de riesgo crediticio.</p>
         </div>
         <div class="page-actions" x-data="{ modalReclasificar: false }">
+            @can('viewIncobrables', \App\Models\Credito::class)
+                <a href="{{ route('incobrables.index') }}" class="btn btn-secondary">Cartera de incobrables</a>
+            @endcan
             {{-- Botón con Modal de Confirmación Moderno --}}
             <button type="button" @click="modalReclasificar = true" class="btn btn-warning">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

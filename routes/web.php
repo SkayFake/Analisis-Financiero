@@ -41,8 +41,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/creditos', [\App\Http\Controllers\CreditoController::class, 'store'])->name('creditos.store');
     Route::get('/creditos/{credito}', [\App\Http\Controllers\CreditoController::class, 'show'])->name('creditos.show');
     Route::post('/creditos/{credito}/pagos', [\App\Http\Controllers\CreditoController::class, 'storePago'])->name('creditos.pagos.store');
+    Route::get('/creditos/{credito}/pagos/{pago}/recibo', [\App\Http\Controllers\PagoController::class, 'recibo'])->name('creditos.pagos.recibo');
     Route::post('/creditos/{credito}/aprobar', [\App\Http\Controllers\CreditoController::class, 'aprobar'])->name('creditos.aprobar');
     Route::post('/creditos/{credito}/rechazar', [\App\Http\Controllers\CreditoController::class, 'rechazar'])->name('creditos.rechazar');
+
+    Route::get('/incobrables', [\App\Http\Controllers\IncobrableController::class, 'index'])->name('incobrables.index');
+    Route::post('/creditos/{credito}/incobrable', [\App\Http\Controllers\IncobrableController::class, 'store'])->name('creditos.incobrable');
+    Route::post('/creditos/{credito}/reactivar', [\App\Http\Controllers\IncobrableController::class, 'reactivar'])->name('creditos.reactivar');
 
     // Inventario
     Route::get('/inventario', \App\Livewire\InventarioDashboard::class)->name('inventario.dashboard');

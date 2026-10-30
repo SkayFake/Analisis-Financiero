@@ -84,6 +84,15 @@
                     </a>
                 </div>
 
+                @can('viewIncobrables', \App\Models\Credito::class)
+                <div class="sidebar-section">
+                    <a href="{{ route('incobrables.index') }}" class="sidebar-link {{ request()->routeIs('incobrables.*') ? 'active' : '' }}">
+                        <span class="sidebar-link-icon" aria-hidden="true">!</span>
+                        <span class="sidebar-link-text">Cuentas incobrables</span>
+                    </a>
+                </div>
+                @endcan
+
                 {{-- Módulos Futuros --}}
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Módulos</div>

@@ -127,6 +127,11 @@ class Credito extends Model
         return $this->hasMany(Pago::class)->orderBy('fecha_pago');
     }
 
+    public function cuentasIncobrables()
+    {
+        return $this->hasMany(CuentaIncobrable::class)->orderByDesc('id');
+    }
+
     public function fiadores()
     {
         return $this->hasMany(Fiador::class);
