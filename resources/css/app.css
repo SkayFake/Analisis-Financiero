@@ -1490,6 +1490,18 @@ a:hover {
 @media (max-width: 1024px) { .pos-workspace { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .compact-form-grid { grid-template-columns: minmax(0, 1fr); } }
 
+/* ─── Botón destructivo discreto (ghost + rojo suave) ─── */
+.btn-delete {
+    color: var(--neutral-500);
+    border: 1px solid var(--neutral-200);
+    background: transparent;
+}
+.btn-delete:hover {
+    color: var(--danger-600);
+    background: var(--danger-50);
+    border-color: var(--danger-200, #fca5a5);
+}
+
 /* ─── El Tablazo: visual polish additions ─── */
 .sidebar-brand-img { border-radius: var(--radius-md); background: white; }
 .login-form .btn-primary { background: var(--primary-700); font-size: 1rem; padding: 0.75rem 1.25rem; letter-spacing: 0.01em; }
