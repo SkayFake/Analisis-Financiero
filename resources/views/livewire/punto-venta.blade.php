@@ -262,10 +262,10 @@
 
                                     {{-- Selector de Cantidad con Botones +/- --}}
                                     <td style="text-align: center; vertical-align: middle;">
-                                        <div style="display: inline-flex; align-items: center; border: 1.5px solid var(--neutral-200); border-radius: var(--radius-md); background: #ffffff; overflow: hidden;">
+                                        <div style="display: inline-flex; align-items: center; border: 1.5px solid var(--neutral-200); border-radius: var(--radius-md); background: #ffffff; overflow: hidden; padding: 2px;">
                                             <button type="button" 
                                                     wire:click="cambiarCantidad({{ $index }}, -1)"
-                                                    style="border: none; background: transparent; padding: 0.35rem 0.5rem; cursor: pointer; color: var(--neutral-600); line-height: 1;"
+                                                    class="btn-qty"
                                                     title="Disminuir 1">
                                                 -
                                             </button>
@@ -273,10 +273,10 @@
                                                    wire:model.live.debounce.300ms="detalles.{{$index}}.cantidad" 
                                                    min="0.01" 
                                                    step="1" 
-                                                   style="width: 55px; border: none; text-align: center; font-weight: 600; font-size: 0.875rem; outline: none; padding: 0.25rem 0;">
+                                                   style="width: 50px; border: none; text-align: center; font-weight: 600; font-size: 0.875rem; outline: none; padding: 0.25rem 0;">
                                             <button type="button" 
                                                     wire:click="cambiarCantidad({{ $index }}, 1)"
-                                                    style="border: none; background: transparent; padding: 0.35rem 0.5rem; cursor: pointer; color: var(--neutral-600); line-height: 1;"
+                                                    class="btn-qty"
                                                     title="Aumentar 1">
                                                 +
                                             </button>

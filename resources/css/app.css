@@ -794,29 +794,38 @@ a:hover {
 }
 
 .btn-success {
-    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    background: linear-gradient(135deg, #2e7d5e, #1e5942);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 1px 3px rgba(30, 89, 66, 0.2);
 }
 
 .btn-success:hover {
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    background: linear-gradient(135deg, #368f6c, #246a4f);
+    box-shadow: 0 4px 10px rgba(30, 89, 66, 0.25);
     color: #fff;
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    background: linear-gradient(135deg, #a83a32, #8b2822);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 1px 3px rgba(139, 40, 34, 0.2);
 }
 
 .btn-danger:hover {
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    background: linear-gradient(135deg, #be433a, #9c3029);
+    box-shadow: 0 4px 10px rgba(139, 40, 34, 0.25);
     color: #fff;
 }
 
 .btn-warning {
-    background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+    background: linear-gradient(135deg, var(--accent-500, #c8883a), var(--primary-600, #805323));
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(128, 83, 35, 0.2);
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d99648, var(--primary-500, #9b6b32));
+    box-shadow: 0 4px 10px rgba(128, 83, 35, 0.25);
     color: #fff;
 }
 
@@ -1497,9 +1506,74 @@ a:hover {
     background: transparent;
 }
 .btn-delete:hover {
-    color: var(--danger-600);
-    background: var(--danger-50);
-    border-color: var(--danger-200, #fca5a5);
+    color: #a83a32;
+    background: #fdf2f2;
+    border-color: #fca5a5;
+}
+
+/* ─── Tabs de Navegación de Catálogos y Módulos ─── */
+.tab-nav-list {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    gap: 0.25rem;
+}
+.tab-nav-item {
+    flex-shrink: 0;
+}
+.tab-nav-btn {
+    padding: 0.875rem 1.25rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-600);
+    border-bottom: 3px solid transparent;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.tab-nav-btn:hover {
+    color: var(--primary-700);
+    background: var(--neutral-50);
+}
+.tab-nav-btn.active {
+    font-weight: 600;
+    color: var(--primary-800);
+    border-bottom-color: var(--primary-600);
+    background: rgba(155, 107, 50, 0.05);
+}
+
+/* ─── Botones de Incremento/Decremento POS ─── */
+.btn-qty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--neutral-200);
+    background: var(--surface-card);
+    color: var(--neutral-700);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+    line-height: 1;
+}
+.btn-qty:hover {
+    background: var(--neutral-100);
+    border-color: var(--neutral-300);
+    color: var(--neutral-900);
+}
+.btn-qty:active {
+    background: var(--neutral-200);
+    transform: scale(0.96);
 }
 
 /* ─── El Tablazo: visual polish additions ─── */

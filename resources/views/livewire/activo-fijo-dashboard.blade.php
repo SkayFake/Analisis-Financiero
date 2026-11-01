@@ -160,8 +160,7 @@
                             <td style="text-align: center;">
                                 @if(in_array($a->estado, ['activo', 'depreciado']))
                                     <button wire:click="abrirModalBaja({{ $a->id }})"
-                                            class="btn btn-sm btn-ghost"
-                                            style="color: var(--danger-600);"
+                                            class="btn btn-sm btn-ghost btn-delete"
                                             title="Desincorporar o dar de baja">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="3 6 5 6 21 6"/>

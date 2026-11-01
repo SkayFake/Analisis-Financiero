@@ -11,47 +11,40 @@
     </div>
 
     <div class="card">
-        <div class="card-header" style="border-bottom: 1px solid var(--neutral-200); padding: 0;">
-            <ul style="display: flex; list-style: none; margin: 0; padding: 0;">
-                <li style="margin-right: 1rem;">
-                    <button wire:click="setTab('bodegas')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'bodegas' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'bodegas' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'bodegas' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+        <div class="card-header" style="border-bottom: 1px solid var(--neutral-200); padding: 0.25rem 0.5rem 0;">
+            <ul class="tab-nav-list">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('bodegas')" class="tab-nav-btn {{ $tab === 'bodegas' ? 'active' : '' }}">
                         Bodegas
                     </button>
                 </li>
-                <li style="margin-right: 1rem;">
-                    <button wire:click="setTab('categorias')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'categorias' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'categorias' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'categorias' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('categorias')" class="tab-nav-btn {{ $tab === 'categorias' ? 'active' : '' }}">
                         Categorías
                     </button>
                 </li>
-                <li style="margin-right: 1rem;">
-                    <button wire:click="setTab('marcas')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'marcas' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'marcas' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'marcas' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('marcas')" class="tab-nav-btn {{ $tab === 'marcas' ? 'active' : '' }}">
                         Marcas
                     </button>
                 </li>
-                <li style="margin-right: 1rem;">
-                    <button wire:click="setTab('unidades')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'unidades' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'unidades' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'unidades' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('unidades')" class="tab-nav-btn {{ $tab === 'unidades' ? 'active' : '' }}">
                         Unidades de Medida
                     </button>
                 </li>
-                <li>
-                    <button wire:click="setTab('proveedores')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'proveedores' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'proveedores' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'proveedores' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('proveedores')" class="tab-nav-btn {{ $tab === 'proveedores' ? 'active' : '' }}">
                         Proveedores
                     </button>
                 </li>
-                <li>
-                    <button wire:click="setTab('instituciones')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'instituciones' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'instituciones' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'instituciones' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('instituciones')" class="tab-nav-btn {{ $tab === 'instituciones' ? 'active' : '' }}">
                         Instituciones
                     </button>
                 </li>
-                <li>
-                    <button wire:click="setTab('unidades_organizativas')" 
-                            style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'unidades_organizativas' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'unidades_organizativas' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'unidades_organizativas' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
+                <li class="tab-nav-item">
+                    <button wire:click="setTab('unidades_organizativas')" class="tab-nav-btn {{ $tab === 'unidades_organizativas' ? 'active' : '' }}">
                         Departamentos (Unidades)
                     </button>
                 </li>

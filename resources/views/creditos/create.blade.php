@@ -83,7 +83,7 @@
                             </div>
                         </div>
                         <button type="button" @click="ventaSeleccionada=false;ventaId='';ventaInfo=null;totalFactura=0;cuotaEstimada=0"
-                            style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--danger-600); background: none; border: none; cursor: pointer;">
+                            class="btn btn-sm btn-ghost btn-delete" style="margin-top: 0.75rem;">
                             ✕ Cambiar factura
                         </button>
                     </div>
