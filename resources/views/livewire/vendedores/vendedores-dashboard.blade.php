@@ -31,7 +31,7 @@
         <a href="{{ route('vendedores.pendientes', ['mes' => $periodo->format('Y-m')]) }}">Revisar asignaciones</a>
     </div>
     @endif
-    <div class="card"><div class="data-table-wrapper">
+    <div class="card"><div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
         <table class="data-table" aria-label="Rendimiento de vendedores">
             <thead><tr><th>Vendedor</th><th>Ventas / meta del mes</th><th>Cobros / meta del mes</th><th>Cartera actual</th><th>Riesgo actual</th><th>Acciones</th></tr></thead>
             <tbody>
@@ -72,7 +72,7 @@
                         <input type="text" wire:model="nombre" class="form-input" required maxlength="255">
                         @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="compact-form-grid">
                         <div>
                             <label class="form-label">Teléfono</label>
                             <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
@@ -82,7 +82,7 @@
                             <input type="email" wire:model="email" class="form-input" maxlength="255">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="compact-form-grid">
                         <div>
                             <label class="form-label">Zona</label>
                             <select wire:model="zona_id" class="form-select">

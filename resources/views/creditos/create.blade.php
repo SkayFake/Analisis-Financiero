@@ -98,7 +98,7 @@
                                 <a href="{{ route('facturacion.pos') }}">Punto de Venta</a>.
                             </div>
                         @else
-                        <div class="data-table-wrapper" style="max-height: 280px;">
+                        <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas" style="max-height: 280px;">
                             <table class="data-table">
                                 <thead>
                                     <tr>

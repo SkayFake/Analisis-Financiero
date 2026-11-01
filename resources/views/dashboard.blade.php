@@ -1,9 +1,9 @@
 <x-app-layout>
-    <x-slot name="title">Dashboard Principal</x-slot>
+    <x-slot name="title">Panel general</x-slot>
 
     <div class="page-header">
         <div class="page-header-left">
-            <h1 class="page-title">Dashboard Principal</h1>
+            <h1 class="page-title">Panel general</h1>
             <p class="page-subtitle">Resumen general del estado de la cartera y operaciones.</p>
         </div>
         <div class="page-actions">
@@ -13,6 +13,15 @@
             </a>
         </div>
     </div>
+
+    <nav class="task-links" aria-label="Tareas frecuentes">
+        @can('viewAny', \App\Models\Venta::class)
+        <a href="{{ route('facturacion.pos') }}">Registrar venta →</a>
+        @endcan
+        <a href="{{ route('clientes.index') }}">Consultar clientes →</a>
+        <a href="{{ route('cobros.dashboard') }}">Gestionar cobros →</a>
+        <a href="{{ route('inventario.dashboard') }}">Revisar inventario →</a>
+    </nav>
 
     {{-- KPIs Principales --}}
     <div class="grid-stats">
@@ -72,7 +81,7 @@
                 <h3 class="card-title">Distribución por Zona Geográfica</h3>
             </div>
             <div class="card-body">
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -104,7 +113,7 @@
                 <a href="{{ route('cobros.dashboard') }}" class="btn btn-sm btn-ghost">Ver Detalles</a>
             </div>
             <div class="card-body">
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>

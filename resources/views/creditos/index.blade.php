@@ -35,7 +35,7 @@
             </form>
         </div>
         <div class="card-body" style="padding: 0;">
-            <div class="data-table-wrapper">
+            <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                 <table class="data-table">
                     <thead>
                         <tr>

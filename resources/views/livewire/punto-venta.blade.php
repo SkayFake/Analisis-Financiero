@@ -113,7 +113,7 @@
     </div>
 
     {{-- Layout Principal POS: 2 Columnas (Buscador y Carrito / Checkout Panel) --}}
-    <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(360px, 1.1fr); gap: 1.5rem; align-items: start;">
+    <div class="pos-workspace">
         
         {{-- ═════════════════ COLUMNA IZQUIERDA: BUSCADOR Y LISTA DE PRODUCTOS ═════════════════ --}}
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
@@ -226,7 +226,7 @@
                     @endif
                 </div>
 
-                <div class="data-table-wrapper" style="border: none; border-radius: 0;">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas" style="border: none; border-radius: 0;">
                     <table class="data-table">
                         <thead>
                             <tr>

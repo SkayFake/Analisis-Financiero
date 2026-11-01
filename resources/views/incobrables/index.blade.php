@@ -23,7 +23,7 @@
             </select></div>
         <div style="align-self: center;"><button class="btn btn-primary" type="submit">Filtrar</button></div>
     </form>
-    <div class="card"><div class="data-table-wrapper">
+    <div class="card"><div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
         <table class="data-table" aria-label="Cartera de cuentas incobrables">
             <thead><tr><th>Crédito / cliente</th><th>Declaración</th><th>Capital al traslado</th><th>Total al traslado</th><th>Registro y motivo</th></tr></thead>
             <tbody>

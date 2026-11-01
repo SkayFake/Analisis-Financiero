@@ -251,7 +251,7 @@
                         @endif
                     </div>
                 @else
-                <div class="data-table-wrapper" style="max-height: 400px;">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas" style="max-height: 400px;">
                     <table class="data-table" aria-label="Plan de cuotas">
                         <thead>
                             <tr>
@@ -313,7 +313,7 @@
                 <h3 class="card-title">Historial de Pagos</h3>
             </div>
             <div class="card-body" style="padding: 0;">
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>

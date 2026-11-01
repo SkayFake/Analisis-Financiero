@@ -60,7 +60,7 @@
         
         <div class="card-body" style="padding: 0;">
             @if($tab === 'bodegas')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -93,7 +93,7 @@
             @endif
 
             @if($tab === 'categorias')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -126,7 +126,7 @@
             @endif
 
             @if($tab === 'marcas')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -157,7 +157,7 @@
             @endif
 
             @if($tab === 'unidades')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -184,7 +184,7 @@
             @endif
 
             @if($tab === 'proveedores')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -215,7 +215,7 @@
             @endif
 
             @if($tab === 'instituciones')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -242,7 +242,7 @@
             @endif
 
             @if($tab === 'unidades_organizativas')
-                <div class="data-table-wrapper">
+                <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -323,7 +323,7 @@
                             <label class="form-label">NIT / Documento</label>
                             <input type="text" wire:model="nit" class="form-input" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dígitos; las personas naturales también pueden utilizar el DUI homologado.">
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="compact-form-grid">
                             <div>
                                 <label class="form-label">Teléfono</label>
                                 <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">

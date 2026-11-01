@@ -10,7 +10,7 @@
     <p>Los recibos reconstruidos conservan una marca de origen histórico después de revisarlos; se registra la revisión y salen de esta lista. La reasignación de un crédito no cambia sus recibos anteriores ni el vendedor de la venta.</p>
     @foreach(['ventas'=>$ventas,'pagos'=>$pagos,'creditos'=>$creditos] as $tipo=>$registros)
         <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">{{ ['ventas'=>'Ventas del mes sin vendedor','pagos'=>'Recibos del mes sin atribución o reconstruidos','creditos'=>'Créditos actuales sin responsable'][$tipo] }}</h2></div>
-            <div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Documento</th>
+            <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>Documento</th>
 <th>Cliente / estado</th>
 <th>Atribución actual</th>
 <th>Regularización</th>

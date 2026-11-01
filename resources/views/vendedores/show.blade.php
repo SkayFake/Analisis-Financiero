@@ -42,7 +42,7 @@
 
     <div class="card" style="margin:1.5rem 0;"><div class="card-header"><h2 class="card-title">Clientes y créditos a cargo: seguimiento de cobro</h2>
         @can('export', \App\Models\Vendedor::class)<a href="{{ route('vendedores.reporte',[$vendedor,'mes'=>$periodo->format('Y-m'),'tipo'=>'cartera']) }}">Descargar cartera CSV</a>@endcan</div>
-        <div class="data-table-wrapper"><table class="data-table" aria-label="Cartera actual del vendedor"><thead><tr><th>Cliente / crédito</th>
+        <div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table" aria-label="Cartera actual del vendedor"><thead><tr><th>Cliente / crédito</th>
 <th>Origen y contacto</th>
 <th>Capital / deuda total</th>
 <th>Vencido / último pago</th>
@@ -100,7 +100,7 @@
     </div>
 
     <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Qué vendió en {{ $periodo->format('m/Y') }} · principales 20 productos</h2></div>
-<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Código</th>
+<div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>Código</th>
 <th>Producto</th>
 <th>Unidades</th>
 <th>Importe de líneas</th>
@@ -117,7 +117,7 @@
 </div>
 
     <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Ventas del mes · documentos comerciales válidos</h2>@can('export',\App\Models\Vendedor::class)<a href="{{ route('vendedores.reporte',[$vendedor,'mes'=>$periodo->format('Y-m'),'tipo'=>'ventas']) }}">CSV de ventas</a>@endcan</div>
-<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Documento</th>
+<div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>Documento</th>
 <th>Fecha / cliente</th>
 <th>Condición</th>
 <th>Total sin IVA</th>
@@ -138,7 +138,7 @@
 </div>
 
     <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Cobros del mes atribuidos al vendedor</h2>@can('export',\App\Models\Vendedor::class)<a href="{{ route('vendedores.reporte',[$vendedor,'mes'=>$periodo->format('Y-m'),'tipo'=>'cobros']) }}">CSV de recibos</a>@endcan</div>
-<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Recibo / fecha</th>
+<div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>Recibo / fecha</th>
 <th>Cliente / crédito</th>
 <th>Capital</th>
 <th>Interés / mora</th>
@@ -162,7 +162,7 @@
 </div>
 
     <div class="card" style="margin-bottom:1.5rem;"><div class="card-header"><h2 class="card-title">Gestiones y compromisos de pago</h2></div>
-<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>Registro / responsable</th>
+<div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>Registro / responsable</th>
 <th>Crédito</th>
 <th>Gestión</th>
 <th>Compromiso</th>
@@ -214,7 +214,7 @@
 
     @if($auditorias)
     <div class="card"><div class="card-header"><h2 class="card-title">Bitácora de control</h2>@can('export',\App\Models\Vendedor::class)<a href="{{ route('vendedores.reporte',[$vendedor,'mes'=>$periodo->format('Y-m'),'tipo'=>'auditoria']) }}">CSV de bitácora</a>@endcan</div>
-<div class="data-table-wrapper"><table class="data-table"><thead><tr><th>ID / fecha</th>
+<div class="data-table-wrapper" tabindex="0" role="region" aria-label="Tabla de datos; desplaza horizontalmente para ver todas las columnas"><table class="data-table"><thead><tr><th>ID / fecha</th>
 <th>Acción / entidad</th>
 <th>Responsable / motivo</th>
 <th>Valores registrados</th>
