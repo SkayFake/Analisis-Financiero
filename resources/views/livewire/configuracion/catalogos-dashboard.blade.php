@@ -1,8 +1,8 @@
-﻿<div>
+<div>
     <div class="page-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <h1 class="page-title">ConfiguraciÃ³n de CatÃ¡logos</h1>
-            <p class="page-description">Administre los catÃ¡logos base para el mÃ³dulo de inventarios.</p>
+            <h1 class="page-title">Configuración de Catálogos</h1>
+            <p class="page-description">Administre los catálogos base para el módulo de inventarios.</p>
         </div>
         <button wire:click="create" class="btn btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -22,7 +22,7 @@
                 <li style="margin-right: 1rem;">
                     <button wire:click="setTab('categorias')" 
                             style="padding: 1rem; border: none; background: transparent; cursor: pointer; font-weight: {{ $tab === 'categorias' ? '600' : '400' }}; border-bottom: 2px solid {{ $tab === 'categorias' ? 'var(--primary-600)' : 'transparent' }}; color: {{ $tab === 'categorias' ? 'var(--primary-700)' : 'var(--neutral-600)' }};">
-                        CategorÃ­as
+                        Categorías
                     </button>
                 </li>
                 <li style="margin-right: 1rem;">
@@ -65,7 +65,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>DirecciÃ³n</th>
+                                <th>Dirección</th>
                                 <th>Estado</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
@@ -82,7 +82,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -98,7 +98,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>DescripciÃ³n</th>
+                                <th>Descripción</th>
                                 <th>Estado</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
@@ -115,7 +115,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -146,7 +146,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -173,7 +173,7 @@
                                 <td>{{ $item->abreviatura }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -190,8 +190,8 @@
                             <tr>
                                 <th>Nombre</th>
                                 <th>NIT</th>
-                                <th>TelÃ©fono</th>
-                                <th>DÃ­as CrÃ©dito</th>
+                                <th>Teléfono</th>
+                                <th>Días Crédito</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -204,7 +204,7 @@
                                 <td>{{ $item->dias_credito }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -219,7 +219,7 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>CÃ³digo</th>
+                                <th>Código</th>
                                 <th>Nombre</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
@@ -231,7 +231,7 @@
                                 <td>{{ $item->nombre }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -246,8 +246,8 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>InstituciÃ³n</th>
-                                <th>CÃ³digo Dpto.</th>
+                                <th>Institución</th>
+                                <th>Código Dpto.</th>
                                 <th>Nombre</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
@@ -260,7 +260,7 @@
                                 <td>{{ $item->nombre }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="Â¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
                                 </td>
                             </tr>
                             @endforeach
@@ -272,7 +272,7 @@
         </div>
     </div>
 
-    {{-- MODAL DINÃMICO --}}
+    {{-- MODAL DINÁMICO --}}
     @if($showModal)
     <div class="modal-overlay" wire:keydown.escape="closeModal">
         <div class="modal" style="max-width: 500px;">
@@ -293,10 +293,10 @@
                         @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- Campos especÃ­ficos por pestaÃ±a --}}
+                    {{-- Campos específicos por pestaña --}}
                     @if($tab === 'bodegas')
                         <div>
-                            <label class="form-label">DirecciÃ³n</label>
+                            <label class="form-label">Dirección</label>
                             <input type="text" wire:model="direccion" class="form-input">
                             @error('direccion') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -304,7 +304,7 @@
 
                     @if($tab === 'categorias')
                         <div>
-                            <label class="form-label">DescripciÃ³n</label>
+                            <label class="form-label">Descripción</label>
                             <input type="text" wire:model="descripcion" class="form-input">
                             @error('descripcion') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -321,15 +321,15 @@
                     @if($tab === 'proveedores')
                         <div>
                             <label class="form-label">NIT / Documento</label>
-                            <input type="text" wire:model="nit" class="form-input" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dÃ­gitos; las personas naturales tambiÃ©n pueden utilizar el DUI homologado.">
+                            <input type="text" wire:model="nit" class="form-input" inputmode="numeric" maxlength="17" pattern="(?:[0-9]{14}|[0-9]{4}-[0-9]{6}-[0-9]{3}-[0-9]|[0-9]{8}-?[0-9])" title="NIT de 14 dígitos; las personas naturales también pueden utilizar el DUI homologado.">
                         </div>
                         <div class="compact-form-grid">
                             <div>
-                                <label class="form-label">TelÃ©fono</label>
-                                <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dÃ­gitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
+                                <label class="form-label">Teléfono</label>
+                                <input type="tel" wire:model="telefono" class="form-input" inputmode="tel" maxlength="14" pattern="(?:\+503[ \-]?)?[267][0-9]{3}[ \-]?[0-9]{4}" title="8 dígitos de El Salvador; opcional +503. Comienza con 2, 6 o 7.">
                             </div>
                             <div>
-                                <label class="form-label">DÃ­as de CrÃ©dito</label>
+                                <label class="form-label">Días de Crédito</label>
                                 <input type="number" min="0" wire:model="dias_credito" class="form-input" required max="3650" step="1">
                             </div>
                         </div>
@@ -337,7 +337,7 @@
 
                     @if($tab === 'instituciones')
                         <div>
-                            <label class="form-label">CÃ³digo Institucional (Ej: 2322)</label>
+                            <label class="form-label">Código Institucional (Ej: 2322)</label>
                             <input type="text" wire:model="codigo" class="form-input" required maxlength="4">
                             @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -345,7 +345,7 @@
 
                     @if($tab === 'unidades_organizativas')
                         <div>
-                            <label class="form-label">InstituciÃ³n Padre</label>
+                            <label class="form-label">Institución Padre</label>
                             <select wire:model="institucion_id" class="form-select" required>
                                 <option value="">Seleccione...</option>
                                 @foreach($instituciones as $inst)
@@ -355,7 +355,7 @@
                             @error('institucion_id') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div>
-                            <label class="form-label">CÃ³digo de Departamento (Ej: 5676)</label>
+                            <label class="form-label">Código de Departamento (Ej: 5676)</label>
                             <input type="text" wire:model="codigo" class="form-input" required maxlength="4">
                             @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -381,4 +381,3 @@
     </div>
     @endif
 </div>
-
