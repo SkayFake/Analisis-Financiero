@@ -22,7 +22,9 @@
 
             {{-- Brand --}}
             <div class="sidebar-brand">
-                <div class="sidebar-brand-icon" aria-hidden="true">ET</div>
+                <img src="{{ asset('imagenes/icono.png') }}" alt="El Tablazo"
+                     class="sidebar-brand-icon sidebar-brand-img" aria-hidden="true"
+                     style="object-fit: contain; padding: 2px;">
                 <span class="sidebar-brand-text">El Tablazo<span class="brand-caption">Gestión de mueblería</span></span>
             </div>
 
