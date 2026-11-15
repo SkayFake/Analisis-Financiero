@@ -2,38 +2,40 @@
 
 namespace App\Services;
 
-use App\Models\Venta;
+use App\Exceptions\DteConfigurationException;
+use App\Models\Cliente;
 use App\Models\DetalleVenta;
-use App\Models\LoteContingencia;
 use App\Models\Producto;
 use App\Models\User;
-use App\Jobs\TransmitirDteContingencia;
+use App\Models\Vendedor;
+use App\Models\Venta;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Exceptions\DteConfigurationException;
 use InvalidArgumentException;
-use Exception;
 
 class FacturacionService
 {
     protected $inventarioService;
+
     protected $firmadorService;
+
     protected $dteApiService;
+
     protected $creditoService;
 
     public function __construct(
         InventarioService $inventarioService,
-        FirmadorService   $firmadorService,
-        DteApiService     $dteApiService,
-        CreditoService    $creditoService
+        FirmadorService $firmadorService,
+        DteApiService $dteApiService,
+        CreditoService $creditoService
     ) {
         $this->inventarioService = $inventarioService;
-        $this->firmadorService   = $firmadorService;
-        $this->dteApiService     = $dteApiService;
-        $this->creditoService    = $creditoService;
+        $this->firmadorService = $firmadorService;
+        $this->dteApiService = $dteApiService;
+        $this->creditoService = $creditoService;
     }
 
     /**
@@ -46,7 +48,7 @@ class FacturacionService
             $datosVenta['condicion_operacion'] = (string) $datosVenta['condicion_operacion'];
         }
         Validator::make(array_merge($datosVenta, ['detalles' => $detalles]), [
-            'tipo_documento' => 'required|string|size:2|in:01,03,11,05,06',
+            'tipo_documento' => 'required|string|size:2|in:01,03,TL',
             'condicion_operacion' => 'required|string|in:1,2',
             'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
             'cliente_id' => ['nullable', 'required_if:tipo_documento,03', 'required_if:condicion_operacion,2', Rule::exists('clientes', 'id')->where('activo', true)->whereNull('deleted_at')],
@@ -57,21 +59,25 @@ class FacturacionService
             'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
         ])->validate();
 
+        if (config('erp.dte.enabled') && ! config('erp.modo_academico') && $datosVenta['tipo_documento'] !== 'TL') {
+            throw new DteConfigurationException('Emisión fiscal bloqueada: falta validar y homologar el emisor DTE con los esquemas vigentes de Hacienda. Puede registrar un ticket local TL.');
+        }
+
         return DB::transaction(function () use ($datosVenta, $detalles, $usuarioId) {
             $usuario = User::findOrFail($usuarioId);
-            $vendedorId = $datosVenta['vendedor_id'] ?? (!empty($datosVenta['cliente_id']) ? \App\Models\Cliente::find($datosVenta['cliente_id'])?->vendedor_id : null);
-            if ($vendedorId && !\App\Models\Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first()) {
+            $vendedorId = $datosVenta['vendedor_id'] ?? (! empty($datosVenta['cliente_id']) ? Cliente::find($datosVenta['cliente_id'])?->vendedor_id : null);
+            if ($vendedorId && ! Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first()) {
                 throw ValidationException::withMessages(['vendedor_id' => 'Seleccione un vendedor activo para la venta.']);
             }
-            $productos = Producto::whereIn('id', array_column($detalles, 'producto_id'))->sharedLock()->get()->keyBy('id');
+            $productos = Producto::whereIn('id', array_column($detalles, 'producto_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $modificaPrecio = $usuario->hasRole('super-admin') || $usuario->can('facturacion.modificar_precio');
             $total = 0;
             foreach ($detalles as $i => $detalle) {
                 $producto = $productos->get($detalle['producto_id']);
-                if (!$producto || !$producto->activo) {
+                if (! $producto || ! $producto->activo) {
                     throw ValidationException::withMessages(["detalles.{$i}.producto_id" => 'El producto no está habilitado.']);
                 }
-                if (!$modificaPrecio && (int) round((float) $detalle['precio_unitario'] * 100) !== (int) round((float) $producto->precio_venta * 100)) {
+                if (! $modificaPrecio && (int) round((float) $detalle['precio_unitario'] * 100) !== (int) round((float) $producto->precio_venta * 100)) {
                     throw ValidationException::withMessages(["detalles.{$i}.precio_unitario" => 'No tiene permiso para modificar el precio del catálogo.']);
                 }
                 $total += round($detalle['cantidad'] * $detalle['precio_unitario'], 2);
@@ -84,12 +90,12 @@ class FacturacionService
             // Si es venta al crédito, validar previamente que vengan los datos requeridos
             if ($condicionOperacion === '2') {
                 if (empty($datosVenta['cliente_id'])) {
-                    throw new InvalidArgumentException("El cliente es obligatorio para ventas al crédito comercial.");
+                    throw new InvalidArgumentException('El cliente es obligatorio para ventas al crédito comercial.');
                 }
 
                 $condicionesCredito = $datosVenta['condiciones_credito'] ?? [];
                 if (empty($condicionesCredito['condicion_credito_id'])) {
-                    throw new InvalidArgumentException("Debe seleccionar las condiciones de crédito para la venta al crédito.");
+                    throw new InvalidArgumentException('Debe seleccionar las condiciones de crédito para la venta al crédito.');
                 }
             }
 
@@ -97,9 +103,9 @@ class FacturacionService
             $venta = Venta::create([
                 'cliente_id' => $datosVenta['cliente_id'] ?? null,
                 'vendedor_id' => $vendedorId,
-                'tipo_documento' => $datosVenta['tipo_documento'], // 01 FCF, 03 CCF, 11 Ticket
+                'tipo_documento' => $datosVenta['tipo_documento'], // 01 FCF, 03 CCF, TL Ticket interno
                 'codigo_generacion' => strtoupper((string) Str::uuid()),
-                'numero_control' => 'DTE-'. $datosVenta['tipo_documento'] . '-' . str_pad(Venta::where('tipo_documento', $datosVenta['tipo_documento'])->count() + 1, 15, '0', STR_PAD_LEFT),
+                'numero_control' => 'LOC-'.$datosVenta['tipo_documento'].'-'.str_pad(app(CorrelativoService::class)->siguiente('venta-local', (int) Venta::max('id')), 15, '0', STR_PAD_LEFT),
                 'fecha_emision' => now()->toDateString(),
                 'hora_emision' => now()->toTimeString(),
                 'condicion_operacion' => $condicionOperacion, // 1 Contado, 2 Crédito
@@ -107,7 +113,7 @@ class FacturacionService
             ]);
 
             $totales = [
-                'gravado' => 0, 'exento' => 0, 'nosujeto' => 0, 'descuento' => 0
+                'gravado' => 0, 'exento' => 0, 'nosujeto' => 0, 'descuento' => 0,
             ];
 
             // 2. Procesar Detalles y Rebajar Inventario
@@ -127,7 +133,7 @@ class FacturacionService
                     'venta_gravada' => $montoGravado,
                 ]);
 
-                if (!empty($det['producto_id'])) {
+                if (! empty($det['producto_id'])) {
                     $detallesParaInventario[] = [
                         'producto_id' => $det['producto_id'],
                         'cantidad' => $det['cantidad'],
@@ -136,17 +142,19 @@ class FacturacionService
             }
 
             // Salida de inventario
-            if (!empty($detallesParaInventario)) {
+            if (! empty($detallesParaInventario)) {
                 $this->inventarioService->registrarSalida([
                     'bodega_id' => $bodegaId,
-                    'referencia' => 'Venta ' . $venta->numero_control,
-                    'detalles' => $detallesParaInventario
+                    'referencia' => 'Venta '.$venta->numero_control,
+                    'detalles' => $detallesParaInventario,
                 ], $usuarioId);
             }
 
             // Cálculos finales de la Venta
-            $ivaTotal = ($venta->tipo_documento === '03') ? round($totales['gravado'] * 0.13, 2) : 0;
-            $totalPagar = $totales['gravado'] + $ivaTotal;
+            $ivaTotal = $venta->tipo_documento === '03'
+                ? round($totales['gravado'] * 0.13, 2)
+                : round($totales['gravado'] - $totales['gravado'] / 1.13, 2);
+            $totalPagar = $totales['gravado'] + ($venta->tipo_documento === '03' ? $ivaTotal : 0);
             $venta->update([
                 'total_gravado' => $totales['gravado'],
                 'total_iva' => $ivaTotal,
@@ -162,15 +170,13 @@ class FacturacionService
             }
 
             // Las ventas y créditos funcionan sin servicios fiscales en el proyecto académico.
-            if (!config('erp.dte.enabled') || $venta->tipo_documento === '11') {
+            if (config('erp.modo_academico') || ! config('erp.dte.enabled') || $venta->tipo_documento === 'TL') {
                 $venta->update([
                     'estado_dte' => 'local',
                     'sello_recepcion' => null,
                     'json_firmado' => null,
                     'mensaje_mh' => 'Documento local. No transmitido a Hacienda.',
                 ]);
-            } elseif (in_array($venta->tipo_documento, ['01', '03', '05', '06'])) {
-                $this->firmarYTransmitir($venta);
             }
 
             if ($venta->vendedor) {
@@ -181,55 +187,5 @@ class FacturacionService
 
             return $venta;
         });
-    }
-
-    private function firmarYTransmitir(Venta $venta)
-    {
-        try {
-            $jsonEstructural = [
-                'identificacion' => [
-                    'version' => 1,
-                    'ambiente' => '00',
-                    'tipoDte' => $venta->tipo_documento,
-                    'numeroControl' => $venta->numero_control,
-                    'codigoGeneracion' => $venta->codigo_generacion,
-                ],
-            ];
-
-            // 1. Firmar
-            $jsonFirmado = $this->firmadorService->firmarDocumento($jsonEstructural);
-            $venta->json_firmado = $jsonFirmado;
-            $venta->save();
-
-            // 2. Transmitir
-            $respuestaMH = $this->dteApiService->transmitirDTE($jsonFirmado, $venta->tipo_documento, $venta->codigo_generacion);
-
-            if (isset($respuestaMH['estado']) && $respuestaMH['estado'] == 'PROCESADO') {
-                $venta->estado_dte = 'procesado';
-                $venta->sello_recepcion = $respuestaMH['selloRecibido'];
-                $venta->mensaje_mh = 'Procesado correctamente';
-            } else {
-                $venta->estado_dte = 'rechazado';
-                $venta->mensaje_mh = json_encode($respuestaMH);
-            }
-
-        } catch (DteConfigurationException $e) {
-            throw $e;
-        } catch (Exception $e) {
-            // ENTRAR EN CONTINGENCIA SI FALLA LA CONEXIÓN O EL FIRMADOR
-            $venta->estado_dte = 'contingencia';
-            $venta->mensaje_mh = $e->getMessage();
-            
-            $lote = LoteContingencia::firstOrCreate(
-                ['estado' => 'pendiente'],
-                ['codigo_lote' => strtoupper((string) Str::uuid()), 'fecha_transmision' => now()->toDateString(), 'hora_transmision' => now()->toTimeString()]
-            );
-
-            $venta->lote_contingencia_id = $lote->id;
-            
-            TransmitirDteContingencia::dispatch($venta->id)->delay(now()->addMinutes(5));
-        }
-
-        $venta->save();
     }
 }

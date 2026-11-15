@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -13,6 +14,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        foreach (['cuotas', 'pagos', 'fiadores', 'embargos', 'refinanciamientos', 'historial_clasificaciones'] as $tabla) {
+            if (Schema::hasTable($tabla) && DB::table($tabla)->exists()) {
+                throw new RuntimeException('Actualización detenida: '.$tabla.' contiene datos. Requiere migración histórica revisada y respaldo restaurable.');
+            }
+        }
+
         // Drop tables in dependency order
         Schema::dropIfExists('historial_clasificaciones');
         Schema::dropIfExists('embargos');

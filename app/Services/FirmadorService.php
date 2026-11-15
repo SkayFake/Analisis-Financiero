@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\ConfiguracionDTE;
-use Illuminate\Support\Facades\Http;
-use Exception;
 use App\Exceptions\DteConfigurationException;
+use App\Models\ConfiguracionDTE;
+use Exception;
+use Illuminate\Support\Facades\Http;
 
 class FirmadorService
 {
@@ -18,21 +18,24 @@ class FirmadorService
 
     public function firmarDocumento(array $jsonEstructural)
     {
-        if (!config('erp.dte.enabled')) {
+        if (config('erp.modo_academico')) {
+            throw new DteConfigurationException('Modo académico: no se utilizan certificados ni servicios reales de firma.');
+        }
+        if (! config('erp.dte.enabled')) {
             throw new DteConfigurationException('La integración con Hacienda está deshabilitada. Utilice documentos locales.');
         }
-        if (!$this->config || !filter_var($this->config->url_firmador, FILTER_VALIDATE_URL)
-            || !in_array(parse_url($this->config->url_firmador, PHP_URL_SCHEME), ['http', 'https'])
+        if (! $this->config || ! filter_var($this->config->url_firmador, FILTER_VALIDATE_URL)
+            || ! in_array(parse_url($this->config->url_firmador, PHP_URL_SCHEME), ['http', 'https'])
             || empty($this->config->nit) || empty($this->config->password_firmador)) {
             throw new DteConfigurationException('Configure el firmador y sus credenciales antes de emitir documentos fiscales.');
         }
 
         try {
-            $response = Http::connectTimeout(10)->timeout(30)->post(rtrim($this->config->url_firmador, '/') . '/firmardocumento', [
+            $response = Http::connectTimeout(10)->timeout(30)->post(rtrim($this->config->url_firmador, '/').'/firmardocumento', [
                 'nit' => $this->config->nit,
                 'activo' => true,
                 'passwordPri' => $this->config->password_firmador,
-                'dteJson' => $jsonEstructural
+                'dteJson' => $jsonEstructural,
             ]);
 
             if ($response->successful()) {
@@ -43,9 +46,8 @@ class FirmadorService
                 throw new Exception('El firmador no devolvió un documento firmado válido.');
             }
 
-            throw new Exception("Error de comunicación con el Firmador: " . $response->status());
-
-        } catch (\Exception $e) {
+            throw new Exception('Error de comunicación con el Firmador: '.$response->status());
+        } catch (Exception $e) {
             throw new Exception('No se pudo obtener una firma válida. Verifique el servicio firmador.', 0, $e);
         }
     }

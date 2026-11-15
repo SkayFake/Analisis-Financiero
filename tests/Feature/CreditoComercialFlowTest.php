@@ -2,39 +2,49 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Models\Bodega;
+use App\Models\Categoria;
 use App\Models\Cliente;
 use App\Models\CondicionCredito;
-use App\Models\Venta;
-use App\Models\Producto;
-use App\Models\Bodega;
-use App\Models\Existencia;
 use App\Models\Credito;
 use App\Models\Cuota;
+use App\Models\Existencia;
 use App\Models\Pago;
 use App\Models\PagoCuota;
+use App\Models\Producto;
+use App\Models\UnidadMedida;
+use App\Models\User;
+use App\Models\Venta;
 use App\Services\CreditoService;
+use App\Services\DteApiService;
 use App\Services\FacturacionService;
 use App\Services\FirmadorService;
-use App\Services\DteApiService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Mockery;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use Tests\TestCase;
 
 class CreditoComercialFlowTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $agentUser;
+
     protected User $unauthorizedUser;
+
     protected Cliente $cliente;
+
     protected CondicionCredito $condicionSinInteres;
+
     protected CondicionCredito $condicionConInteres;
+
     protected Bodega $bodega;
+
     protected Producto $producto;
 
     protected function setUp(): void
@@ -43,9 +53,9 @@ class CreditoComercialFlowTest extends TestCase
         // Escenarios del flujo anterior; el expediente obligatorio se cubre en ExpedientesTest.
         config(['expedientes.exigir_creditos_nuevos' => false]);
         // This suite explicitly exercises the future fiscal path with mocked services.
-        config(['erp.dte.enabled' => true]);
+        config(['erp.dte.enabled' => false]);
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Crear permisos
         $permisos = [
@@ -113,12 +123,12 @@ class CreditoComercialFlowTest extends TestCase
         ]);
 
         // Crear Unidad de Medida y Categoría para Producto
-        $unidad = \App\Models\UnidadMedida::create([
+        $unidad = UnidadMedida::create([
             'nombre' => 'Unidad',
             'abreviatura' => 'UND',
         ]);
 
-        $categoria = \App\Models\Categoria::create([
+        $categoria = Categoria::create([
             'nombre' => 'Construcción',
         ]);
 
@@ -173,7 +183,7 @@ class CreditoComercialFlowTest extends TestCase
                 'producto_id' => $this->producto->id,
                 'cantidad' => 5,
                 'precio_unitario' => 10.00,
-            ]
+            ],
         ];
 
         $venta = $facturacionService->procesarVenta($datosVenta, $detalles, $this->adminUser->id);
@@ -218,7 +228,7 @@ class CreditoComercialFlowTest extends TestCase
                 'producto_id' => $this->producto->id,
                 'cantidad' => 5,
                 'precio_unitario' => 10.00,
-            ]
+            ],
         ];
 
         try {
@@ -245,7 +255,7 @@ class CreditoComercialFlowTest extends TestCase
         $ventaContado = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000001',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -268,7 +278,7 @@ class CreditoComercialFlowTest extends TestCase
         $ventaCredito = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000002',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -301,7 +311,7 @@ class CreditoComercialFlowTest extends TestCase
         $venta = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000003',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -337,7 +347,7 @@ class CreditoComercialFlowTest extends TestCase
         $venta = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000004',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -363,7 +373,7 @@ class CreditoComercialFlowTest extends TestCase
         $venta = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000005',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -427,7 +437,7 @@ class CreditoComercialFlowTest extends TestCase
         $venta = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000006',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),
@@ -480,7 +490,7 @@ class CreditoComercialFlowTest extends TestCase
         $venta = Venta::create([
             'cliente_id' => $this->cliente->id,
             'tipo_documento' => '01',
-            'codigo_generacion' => (string) \Illuminate\Support\Str::uuid(),
+            'codigo_generacion' => (string) Str::uuid(),
             'numero_control' => 'DTE-01-000000000000007',
             'fecha_emision' => now()->toDateString(),
             'hora_emision' => now()->toTimeString(),

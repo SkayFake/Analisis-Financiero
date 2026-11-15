@@ -22,14 +22,14 @@ class Cuota extends Model
     ];
 
     protected $casts = [
-        'capital'          => 'decimal:2',
-        'interes'          => 'decimal:2',
-        'total'            => 'decimal:2',
-        'mora'             => 'decimal:2',
-        'saldo_pendiente'  => 'decimal:2',
-        'monto_pagado'     => 'decimal:2',
+        'capital' => 'decimal:2',
+        'interes' => 'decimal:2',
+        'total' => 'decimal:2',
+        'mora' => 'decimal:2',
+        'saldo_pendiente' => 'decimal:2',
+        'monto_pagado' => 'decimal:2',
         'fecha_vencimiento' => 'date',
-        'fecha_pago'       => 'date',
+        'fecha_pago' => 'date',
     ];
 
     public function credito()
@@ -64,7 +64,7 @@ class Cuota extends Model
     /** Monto restante a pagar en esta cuota */
     public function getRestanteAttribute(): float
     {
-        return (float) $this->total - (float) $this->monto_pagado;
+        return max(0.0, round((float) $this->capital - (float) $this->aplicacionesPago()->sum('abono_capital'), 2));
     }
 
     /** Total incluyendo mora acumulada */
@@ -81,9 +81,12 @@ class Cuota extends Model
 
     public function getEstaVencidaAttribute(): bool
     {
-        if (!$this->fecha_vencimiento) return false;
+        if (! $this->fecha_vencimiento) {
+            return false;
+        }
+
         return $this->fecha_vencimiento->isPast()
-            && in_array($this->estado, ['pendiente', 'parcial']);
+            && in_array($this->estado, ['pendiente', 'parcial', 'vencida']);
     }
 
     /**
@@ -92,7 +95,7 @@ class Cuota extends Model
      */
     public function actualizarDiasMora(): int
     {
-        if (!$this->esta_vencida) {
+        if (! $this->esta_vencida) {
             return 0;
         }
 

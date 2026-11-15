@@ -2,8 +2,8 @@
     {{-- Encabezado de Página --}}
     <div class="page-header">
         <div class="page-header-left">
-            <h1 class="page-title">{{ config('erp.dte.enabled') ? 'Punto de Facturación Electrónica (DTE)' : 'Punto de Venta' }}</h1>
-            <p class="page-subtitle">{{ config('erp.dte.enabled') ? 'Gestión de documentos electrónicos y su estado de transmisión.' : 'Proyecto académico: ventas y créditos con comprobantes locales, sin conexión a Hacienda.' }}</p>
+            <h1 class="page-title">{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'Punto de Facturación Electrónica (DTE)' : 'Punto de Venta' }}</h1>
+            <p class="page-subtitle">{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'Gestión de documentos electrónicos y su estado de transmisión.' : 'Proyecto académico: ventas y créditos con comprobantes locales, sin conexión a Hacienda.' }}</p>
         </div>
         <div class="page-actions">
             @if(count($detalles) > 0)
@@ -81,14 +81,14 @@
         {{-- DTEs Transmitidos / Procesados --}}
         <div class="stat-card" style="--stat-color: var(--success-600); --stat-bg: var(--success-50);">
             <div class="stat-card-top">
-                <div class="stat-card-label">{{ config('erp.dte.enabled') ? 'DTEs Transmitidos MH' : 'Documentos Locales' }}</div>
+                <div class="stat-card-label">{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'DTEs Transmitidos MH' : 'Documentos Locales' }}</div>
                 <div class="stat-card-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 6L9 17l-5-5"/>
                     </svg>
                 </div>
             </div>
-                <div class="stat-card-value">{{ config('erp.dte.enabled') ? $docsTransmitidos : $docsLocales }}</div>
+                <div class="stat-card-value">{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? $docsTransmitidos : $docsLocales }}</div>
             <div class="stat-card-change up">
                 Sello de recepción OK
             </div>
@@ -363,7 +363,7 @@
                         <path d="M16 17H8"/>
                         <path d="M10 9H8"/>
                     </svg>
-                    <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--neutral-900);">{{ config('erp.dte.enabled') ? 'Datos del DTE' : 'Datos del comprobante' }}</h3>
+                    <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--neutral-900);">{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'Datos del DTE' : 'Datos del comprobante' }}</h3>
                 </div>
 
                 {{-- Tipo de Documento Tributario --}}
@@ -372,16 +372,14 @@
                     <select wire:model.live="tipo_documento" class="form-select" style="font-weight: 600;">
                         <option value="01">01 - Factura Consumidor Final (FCF)</option>
                         <option value="03">03 - Comprobante de Crédito Fiscal (CCF)</option>
-                        <option value="11">11 - Ticket de Venta (Interno POS)</option>
-                        <option value="05">05 - Nota de Crédito (NC)</option>
-                        <option value="06">06 - Nota de Débito (ND)</option>
+                        <option value="TL">11 - Ticket de Venta (Interno POS)</option>
                     </select>
                     <div class="form-hint" style="font-size: 0.75rem;">
                         @if($tipo_documento === '01')
                             <span class="badge badge-info" style="font-size: 0.65rem;">FCF</span> Venta a particulares. IVA (13%) incluido en precio.
                         @elseif($tipo_documento === '03')
                             <span class="badge badge-warning" style="font-size: 0.65rem;">CCF</span> Contribuyentes IVA. Desglosa débito fiscal +13%.
-                        @elseif($tipo_documento === '11')
+                        @elseif($tipo_documento === 'TL')
                             <span class="badge badge-neutral" style="font-size: 0.65rem;">Ticket</span> Documento simplificado continuo (80mm).
                         @endif
                     </div>
@@ -559,7 +557,7 @@
                     
                     {{-- Subtotal Gravado --}}
                     <div style="display: flex; justify-content: space-between; align-items: center; color: var(--neutral-600);">
-                        <span>Subtotal Gravado:</span>
+                        <span>{{ $tipo_documento === '03' ? 'Importe sin IVA:' : 'Importe con IVA:' }}</span>
                         <span style="font-weight: 600; color: var(--neutral-900);">${{ number_format($subtotal, 2) }}</span>
                     </div>
 
@@ -572,7 +570,7 @@
                     @else
                         <div style="display: flex; justify-content: space-between; align-items: center; color: var(--neutral-400); font-size: 0.75rem;">
                             <span>IVA (13% incluido):</span>
-                            <span>${{ number_format($subtotal - ($subtotal / 1.13), 2) }}</span>
+                            <span>${{ number_format($iva, 2) }}</span>
                         </div>
                     @endif
 
@@ -603,7 +601,7 @@
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
                             </svg>
-                            <span>{{ config('erp.dte.enabled') ? 'Emitir Factura DTE' : 'Registrar venta y generar comprobante' }}</span>
+                            <span>{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'Emitir Factura DTE' : 'Registrar venta y generar comprobante' }}</span>
                         </span>
 
                         <span wire:loading.inline-flex wire:target="facturar" style="align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap;">
@@ -611,7 +609,7 @@
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-dasharray="32" stroke-linecap="round" fill="none" style="opacity: 0.3;"></circle>
                                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"></path>
                             </svg>
-                            <span>{{ config('erp.dte.enabled') ? 'Transmitiendo DTE...' : 'Registrando venta...' }}</span>
+                            <span>{{ (config('erp.dte.enabled') && !config('erp.modo_academico')) ? 'Transmitiendo DTE...' : 'Registrando venta...' }}</span>
                         </span>
                     </button>
 

@@ -15,6 +15,7 @@ use App\Models\Pago;
 use App\Models\Producto;
 use App\Models\UnidadMedida;
 use App\Models\User;
+use App\Models\Vendedor;
 use App\Models\Venta;
 use App\Services\ConciliacionPagosService;
 use App\Services\CreditoService;
@@ -72,13 +73,18 @@ class CorreccionesIntegridadTest extends TestCase
         ]);
         $venta = Venta::create([
             'cliente_id' => $cliente->id, 'codigo_generacion' => (string) Str::uuid(),
-            'numero_control' => 'REV-'.bin2hex(random_bytes(4)), 'tipo_documento' => '11',
+            'numero_control' => 'REV-'.bin2hex(random_bytes(4)), 'tipo_documento' => 'TL',
             'fecha_emision' => now()->toDateString(), 'hora_emision' => '12:00:00', 'condicion_operacion' => '2', 'total_pagar' => 100,
         ]);
 
-        return app(CreditoService::class)->crearCreditoDesdeVenta($venta, [
+        $credito = app(CreditoService::class)->crearCreditoDesdeVenta($venta, [
             'condicion_credito_id' => $condicion->id, 'numero_cuotas' => 1, 'fecha_primera_cuota' => now()->addMonth()->toDateString(),
         ]);
+        // Caso histórico explícito para verificar la conciliación sin reescribir recibos.
+        $credito->update(['calculo_interes' => 'historico', 'fecha_primera_cuota' => today()]);
+        app(CreditoService::class)->generarPlanPago($credito);
+
+        return $credito;
     }
 
     private function historico(Credito $credito, float $capital = 49, float $interes = 1): Pago
@@ -175,8 +181,8 @@ class CorreccionesIntegridadTest extends TestCase
     public function test_usuario_solo_lectura_no_puede_facturar_contado(): void
     {
         [$bodega, $producto, $linea] = $this->carrito();
-        Livewire::actingAs($this->usuario(['facturacion.view']))->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
+        Livewire::actingAs($this->usuario(['facturacion.view']))->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertForbidden();
         $this->assertDatabaseCount('ventas', 0);
         $this->assertEquals(10, $producto->stock_total);
@@ -186,8 +192,8 @@ class CorreccionesIntegridadTest extends TestCase
     {
         [$bodega, $producto, $linea] = $this->carrito();
         $user = $this->usuario(['facturacion.emitir']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $this->assertDatabaseHas('ventas', ['total_pagar' => 10, 'condicion_operacion' => '1']);
         $this->assertEquals(9, $producto->stock_total);
@@ -199,11 +205,11 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $linea['cantidad'] = -2;
         $user = $this->usuario(['facturacion.emitir']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasErrors(['detalles.0.cantidad'])->assertSee('Revise los datos de la venta:');
         try {
-            app(FacturacionService::class)->procesarVenta(['tipo_documento' => '11', 'condicion_operacion' => '1', 'bodega_id' => $bodega->id], [$linea], $user->id);
+            app(FacturacionService::class)->procesarVenta(['tipo_documento' => 'TL', 'condicion_operacion' => '1', 'bodega_id' => $bodega->id], [$linea], $user->id);
             $this->fail('El servicio aceptó una cantidad negativa.');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('detalles.0.cantidad', $e->errors());
@@ -217,13 +223,13 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $user = $this->usuario(['facturacion.emitir']);
         $linea['precio_unitario'] = 1;
-        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasErrors(['detalles.0.precio_unitario']);
         $this->assertDatabaseCount('ventas', 0);
         $user->givePermissionTo('facturacion.modificar_precio');
-        Livewire::actingAs($user->fresh())->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
+        Livewire::actingAs($user->fresh())->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $this->assertDatabaseHas('ventas', ['total_pagar' => 1]);
         $this->assertSame('10.00', $producto->fresh()->precio_venta);
@@ -232,8 +238,8 @@ class CorreccionesIntegridadTest extends TestCase
     public function test_tipo_numerico_no_permite_omitir_el_permiso_de_credito(): void
     {
         [$bodega, $producto, $linea] = $this->carrito();
-        Livewire::actingAs($this->usuario(['facturacion.emitir']))->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
-            ->set('tipo_documento', '11')->set('condicion_operacion', 2)
+        Livewire::actingAs($this->usuario(['facturacion.emitir']))->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+            ->set('tipo_documento', 'TL')->set('condicion_operacion', 2)
             ->set('bodega_id', $bodega->id)->set('detalles', [$linea])->call('facturar')->assertForbidden();
         $this->assertDatabaseCount('ventas', 0);
     }
@@ -243,7 +249,7 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $this->expectException(\InvalidArgumentException::class);
         app(FacturacionService::class)->procesarVenta([
-            'tipo_documento' => '11', 'condicion_operacion' => 2, 'cliente_id' => $this->cliente()->id,
+            'tipo_documento' => 'TL', 'condicion_operacion' => 2, 'cliente_id' => $this->cliente()->id,
             'bodega_id' => $bodega->id,
         ], [$linea], $this->usuario()->id);
     }
@@ -253,7 +259,7 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $producto->update(['activo' => false]);
         $this->expectException(ValidationException::class);
-        app(FacturacionService::class)->procesarVenta(['tipo_documento' => '11', 'condicion_operacion' => '1', 'bodega_id' => $bodega->id], [$linea], $this->usuario()->id);
+        app(FacturacionService::class)->procesarVenta(['tipo_documento' => 'TL', 'condicion_operacion' => '1', 'bodega_id' => $bodega->id], [$linea], $this->usuario()->id);
     }
 
     public function test_dte_sin_configuracion_revierte_venta_e_inventario(): void
@@ -264,7 +270,7 @@ class CorreccionesIntegridadTest extends TestCase
             app(FacturacionService::class)->procesarVenta(['tipo_documento' => '01', 'condicion_operacion' => '1', 'bodega_id' => $bodega->id], [$linea], $this->usuario()->id);
             $this->fail('Se emitió un DTE sin configuración.');
         } catch (DteConfigurationException $e) {
-            $this->assertStringContainsString('Configure', $e->getMessage());
+            $this->assertStringContainsString('bloqueada', $e->getMessage());
         }
         Http::assertNothingSent();
         $this->assertDatabaseCount('ventas', 0);
@@ -289,16 +295,16 @@ class CorreccionesIntegridadTest extends TestCase
             'apitest.mh.gob.sv/*recepciondte/*' => Http::response(['estado' => 'PROCESADO', 'selloRecibido' => 'respuesta-de-prueba']),
         ]);
         $firmado = app(FirmadorService::class)->firmarDocumento(['identificacion' => ['ambiente' => '00']]);
-        $respuesta = app(DteApiService::class)->transmitirDTE($firmado, '01', 'codigo');
-        $this->assertSame('respuesta-de-prueba', $respuesta['selloRecibido']);
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/recepciondte/') && $request['documento'] === 'firma.de.prueba');
+        $this->assertSame('firma.de.prueba', $firmado);
+        $this->expectException(DteConfigurationException::class);
+        app(DteApiService::class)->transmitirDTE($firmado, '01', 'codigo');
     }
 
     public function test_ficha_cliente_muestra_condicion_comercial_y_fecha(): void
     {
         $cliente = $this->cliente();
         $credito = $this->credito($cliente);
-        $this->actingAs($this->usuario())->get('/clientes/'.$cliente->id)->assertOk()
+        $this->actingAs($this->usuario(['clientes.view']))->get('/clientes/'.$cliente->id)->assertOk()
             ->assertSee('Condición comercial')->assertSee($credito->fecha_solicitud->format('d/m/Y'));
     }
 
@@ -309,9 +315,9 @@ class CorreccionesIntegridadTest extends TestCase
         [$bodega, $producto, $linea] = $this->carrito();
         $base = $this->credito();
         $user = $this->usuario(['facturacion.emitir', 'creditos.create', 'creditos.view', 'cobros.process']);
-        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', \App\Models\Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
+        Livewire::actingAs($user)->test(PuntoVenta::class)->set('vendedor_id', Vendedor::firstOrCreate(['codigo' => 'REV-VND'], ['nombre' => 'Vendedor revisión', 'activo' => true])->id)
             ->set('tipo_documento', '03')->set('condicion_operacion', '2')
-            ->set('cliente_id', $base->cliente_id)->set('vendedor_id', \App\Models\Vendedor::where('codigo', 'REV-VND')->firstOrFail()->id)->set('condicion_credito_id', $base->condicion_credito_id)
+            ->set('cliente_id', $base->cliente_id)->set('vendedor_id', Vendedor::where('codigo', 'REV-VND')->firstOrFail()->id)->set('condicion_credito_id', $base->condicion_credito_id)
             ->set('numero_cuotas', 2)->set('bodega_id', $bodega->id)->set('detalles', [$linea])
             ->call('facturar')->assertHasNoErrors()->assertRedirect();
         $venta = Venta::latest('id')->first();

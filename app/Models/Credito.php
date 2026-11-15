@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Services\CorrelativoService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 /**
  * Crédito Comercial.
@@ -31,6 +31,7 @@ class Credito extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'calculo_interes', 'limite_legal', 'fecha_ultimo_devengo',
         'expediente_requerido', 'requisitos_expediente',
         'vendedor_origen_id',
         'numero',
@@ -65,20 +66,21 @@ class Credito extends Model
     ];
 
     protected $casts = [
+        'limite_legal' => 'array', 'fecha_ultimo_devengo' => 'date',
         'expediente_requerido' => 'boolean', 'requisitos_expediente' => 'array',
         'vendedor_origen_reconstruido' => 'boolean',
-        'monto_original'      => 'decimal:2',
-        'saldo_actual'        => 'decimal:2',
-        'interes_acumulado'   => 'decimal:2',
-        'mora_acumulada'      => 'decimal:2',
-        'tasa_interes_anual'  => 'decimal:4',
-        'tasa_mora_mensual'   => 'decimal:4',
-        'fecha_solicitud'     => 'date',
-        'fecha_aprobacion'    => 'date',
+        'monto_original' => 'decimal:2',
+        'saldo_actual' => 'decimal:2',
+        'interes_acumulado' => 'decimal:2',
+        'mora_acumulada' => 'decimal:2',
+        'tasa_interes_anual' => 'decimal:4',
+        'tasa_mora_mensual' => 'decimal:4',
+        'fecha_solicitud' => 'date',
+        'fecha_aprobacion' => 'date',
         'fecha_primera_cuota' => 'date',
-        'fecha_vencimiento'   => 'date',
-        'fecha_cancelacion'   => 'date',
-        'dui_verificado'      => 'boolean',
+        'fecha_vencimiento' => 'date',
+        'fecha_cancelacion' => 'date',
+        'dui_verificado' => 'boolean',
         'referencia_verificada' => 'boolean',
     ];
 
@@ -111,8 +113,15 @@ class Credito extends Model
         return $this->belongsTo(Vendedor::class);
     }
 
-    public function vendedorOrigen() { return $this->belongsTo(Vendedor::class, 'vendedor_origen_id'); }
-    public function gestionesCobro() { return $this->hasMany(GestionCobro::class)->orderByDesc('id'); }
+    public function vendedorOrigen()
+    {
+        return $this->belongsTo(Vendedor::class, 'vendedor_origen_id');
+    }
+
+    public function gestionesCobro()
+    {
+        return $this->hasMany(GestionCobro::class)->orderByDesc('id');
+    }
 
     public function cartera()
     {
@@ -211,7 +220,10 @@ class Credito extends Model
 
     public function getPorcentajePagadoAttribute(): float
     {
-        if ((float) $this->monto_original <= 0) return 0;
+        if ((float) $this->monto_original <= 0) {
+            return 0;
+        }
+
         return round(($this->total_pagado / (float) $this->monto_original) * 100, 2);
     }
 
@@ -242,17 +254,18 @@ class Credito extends Model
         if ((float) $this->tasa_interes_anual <= 0) {
             return 'Crédito comercial sin interés';
         }
-        return 'Crédito comercial con interés (' . number_format($this->tasa_interes_anual, 2) . '% anual)';
+
+        return 'Crédito comercial con interés ('.number_format($this->tasa_interes_anual, 2).'% anual)';
     }
 
     /** Etiqueta de frecuencia de pago */
     public function getFrecuenciaLabelAttribute(): string
     {
         return match ($this->frecuencia_pago) {
-            'semanal'   => 'Semanal',
+            'semanal' => 'Semanal',
             'quincenal' => 'Quincenal',
-            'mensual'   => 'Mensual',
-            default     => $this->frecuencia_pago,
+            'mensual' => 'Mensual',
+            default => $this->frecuencia_pago,
         };
     }
 
@@ -262,17 +275,11 @@ class Credito extends Model
      */
     public static function generarNumero(): string
     {
-        $año = date('Y');
-        $ultimo = static::where('numero', 'like', "CC-{$año}-%")
-            ->orderByDesc('id')
-            ->value('numero');
+        $prefijo = 'CC-'.now()->format('Y').'-';
+        $max = (int) static::withTrashed()->where('numero', 'like', $prefijo.'%')
+            ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(numero FROM '[0-9]+$') AS BIGINT)),0) AS n")->value('n');
+        $seq = app(CorrelativoService::class)->siguiente($prefijo, $max);
 
-        if ($ultimo) {
-            $seq = (int) substr($ultimo, strrpos($ultimo, '-') + 1) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        return sprintf('CC-%s-%06d', $año, $seq);
+        return sprintf('CC-%s-%06d', now()->format('Y'), $seq);
     }
 }

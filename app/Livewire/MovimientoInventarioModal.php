@@ -2,52 +2,66 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Bodega;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Services\InventarioService;
+use App\Support\Acceso;
 use Exception;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
 class MovimientoInventarioModal extends Component
 {
     public $isOpen = false;
+
     public $tipo = 'entrada'; // entrada, salida, transferencia
 
     // Form inputs
     public $bodega_id = '';
+
     public $bodega_destino_id = '';
+
     public $proveedor_id = '';
+
     public $referencia = '';
+
     public $observaciones = '';
-    
+
     // Detalle
     public $producto_id = '';
+
     public $cantidad = 1;
+
     public $costo_unitario = 0;
+
     public $lote = '';
+
     public $fecha_vencimiento = '';
 
     // Colecciones para los selects
     public $bodegas = [];
+
     public $productos = [];
+
     public $proveedores = [];
 
     protected $listeners = ['abrirModalMovimiento' => 'openModal'];
 
     public function mount()
     {
+        Acceso::exigir('inventario.view');
         $this->bodegas = Bodega::where('activa', true)->get();
         $this->productos = Producto::where('activo', true)->get();
         $this->proveedores = Proveedor::where('activo', true)->get();
     }
 
-    #[\Livewire\Attributes\On('abrirModalMovimiento')]
+    #[On('abrirModalMovimiento')]
     public function openModal($params = [])
     {
         $this->reset(['bodega_id', 'bodega_destino_id', 'proveedor_id', 'referencia', 'observaciones', 'producto_id', 'cantidad', 'costo_unitario', 'lote', 'fecha_vencimiento']);
-        
+
         // Si viene envuelto en { params: [...] }
         if (is_array($params) && isset($params['params']) && is_array($params['params'])) {
             $params = $params['params'];
@@ -55,7 +69,7 @@ class MovimientoInventarioModal extends Component
 
         if (is_array($params)) {
             $this->tipo = $params['tipo'] ?? 'entrada';
-            if (!empty($params['producto_id'])) {
+            if (! empty($params['producto_id'])) {
                 $this->producto_id = $params['producto_id'];
                 $this->updatedProductoId($this->producto_id);
             }
@@ -83,6 +97,7 @@ class MovimientoInventarioModal extends Component
 
     public function guardar()
     {
+        Acceso::exigir('inventario.create');
         $this->validate([
             'tipo' => ['required', Rule::in(['entrada', 'salida', 'transferencia'])],
             'bodega_id' => ['required', 'integer', Rule::exists('bodegas', 'id')->where('activa', true)],
@@ -105,7 +120,7 @@ class MovimientoInventarioModal extends Component
 
         try {
             $service = app(InventarioService::class);
-            
+
             $datos = [
                 'bodega_id' => $this->bodega_id,
                 'proveedor_id' => $this->proveedor_id ?: null,
@@ -120,12 +135,12 @@ class MovimientoInventarioModal extends Component
                         'costo_unitario' => $this->costo_unitario,
                         'lote' => $this->lote ?: null,
                         'fecha_vencimiento' => $this->fecha_vencimiento ?: null,
-                    ]
-                ]
+                    ],
+                ],
             ];
 
             // 1 como user id por ahora (debería ser auth()->id())
-            $userId = auth()->id() ?? 1;
+            $userId = auth()->id();
 
             if ($this->tipo == 'entrada') {
                 $service->registrarEntrada($datos, $userId);
@@ -137,10 +152,10 @@ class MovimientoInventarioModal extends Component
 
             // Notifica al dashboard para que actualice automáticamente sin recargar
             $this->dispatch('stockActualizado');
-            
+
             $this->closeModal();
             session()->flash('message', 'Movimiento registrado con éxito.');
-            
+
         } catch (Exception $e) {
             session()->flash('error', $e->getMessage());
         }

@@ -2,18 +2,21 @@
 
 namespace App\Livewire;
 
+use App\Models\Bodega;
+use App\Models\Existencia;
+use App\Models\Producto;
+use App\Support\Acceso;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Producto;
-use App\Models\Existencia;
-use App\Models\Bodega;
 
 class InventarioDashboard extends Component
 {
     use WithPagination;
 
     public $bodega_id = '';
+
     public $buscar = '';
+
     public $mostrarAgotados = false;
 
     public function updatingBuscar()
@@ -42,13 +45,14 @@ class InventarioDashboard extends Component
 
     public function render()
     {
+        Acceso::exigir('inventario.view');
         $busqueda = is_string($this->buscar) ? mb_substr($this->buscar, 0, 150) : '';
         $query = Producto::with(['existencias.bodega', 'categoria', 'marca']);
 
         if ($busqueda !== '') {
-            $query->where(function($q) use ($busqueda) {
-                $q->where('nombre', 'ilike', '%' . $busqueda . '%')
-                  ->orWhere('codigo', 'ilike', '%' . $busqueda . '%');
+            $query->where(function ($q) use ($busqueda) {
+                $q->where('nombre', 'ilike', '%'.$busqueda.'%')
+                    ->orWhere('codigo', 'ilike', '%'.$busqueda.'%');
             });
         }
 
@@ -61,12 +65,12 @@ class InventarioDashboard extends Component
         $bodegas = Bodega::where('activa', true)->get();
 
         // Calcular Valoración Total
-        $valoracionTotal = Producto::all()->sum(function($p) {
+        $valoracionTotal = Producto::all()->sum(function ($p) {
             return $p->stock_total * $p->costo_unitario;
         });
 
         // Contar alertas
-        $alertasStock = Producto::all()->filter(function($p) {
+        $alertasStock = Producto::all()->filter(function ($p) {
             return $p->stock_total <= $p->stock_minimo;
         })->count();
 

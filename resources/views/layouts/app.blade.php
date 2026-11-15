@@ -54,6 +54,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Clientes y cobranza</div>
 
+                    @can('clientes.view')
                     <a title="Clientes" href="{{ route('clientes.index') }}"
                        class="sidebar-link {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
@@ -64,6 +65,7 @@
                         </span>
                         <span class="sidebar-link-text">Clientes</span>
                     </a>
+                    @endcan
 
                     <a title="Créditos" href="{{ route('creditos.index') }}"
                        class="sidebar-link {{ request()->routeIs('creditos.*') ? 'active' : '' }}">
@@ -79,6 +81,7 @@
                         @endif
                     </a>
 
+                    @can('cobros.view')
                     <a title="Cobros" href="{{ route('cobros.dashboard') }}"
                        class="sidebar-link {{ request()->routeIs('cobros.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
@@ -89,6 +92,7 @@
                         </span>
                         <span class="sidebar-link-text">Cobros</span>
                     </a>
+                    @endcan
                 </div>
 
                 @can('viewIncobrables', \App\Models\Credito::class)
@@ -104,6 +108,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Ventas y existencias</div>
 
+                    @can('inventario.view')
                     <a title="Inventarios" href="{{ route('inventario.dashboard') }}" class="sidebar-link {{ request()->routeIs('inventario.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,6 +118,7 @@
                         </span>
                         <span class="sidebar-link-text">Inventarios</span>
                     </a>
+                    @endcan
 
                     <a title="Facturación DTE" href="{{ route('facturacion.pos') }}" class="sidebar-link {{ request()->routeIs('facturacion.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
@@ -124,6 +130,7 @@
                         <span class="sidebar-link-text">Facturación DTE</span>
                     </a>
 
+                    @can('activos.view')
                     <a title="Activo Fijo" href="{{ route('activos-fijos.dashboard') }}" class="sidebar-link {{ request()->routeIs('activos-fijos.*') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -132,6 +139,7 @@
                         </span>
                         <span class="sidebar-link-text">Activo Fijo</span>
                     </a>
+                    @endcan
                 </div>
 
                 {{-- Configuración --}}
@@ -152,6 +160,7 @@
                     </a>
                     @endcan
 
+                    @can('configuracion.manage')
                     <a title="Catálogos" href="{{ route('configuracion.catalogos') }}" class="sidebar-link {{ request()->routeIs('configuracion.catalogos') ? 'active' : '' }}">
                         <span class="sidebar-link-icon">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -161,6 +170,7 @@
                         </span>
                         <span class="sidebar-link-text">Catálogos</span>
                     </a>
+                    @endcan
                 </div>
             </nav>
 
@@ -229,6 +239,8 @@
 
             {{-- Page Content --}}
             <main class="erp-content" id="contenido" tabindex="-1">
+            @if(config('erp.modo_academico'))<p role="note" class="alert alert-info">Proyecto universitario: utilice únicamente datos ficticios. Comprobantes y simulaciones sin validez fiscal.</p>@endif
+
                 {{-- Flash Messages --}}
                 @if(session('success'))
                     <div class="alert alert-success animate-slideUp" x-data="{ show: true }" x-show="show"

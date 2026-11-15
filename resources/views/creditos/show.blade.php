@@ -1,6 +1,9 @@
 <x-app-layout>
     <x-slot name="title">Crédito {{ $credito->numero }}</x-slot>
     @include('components.errores-validacion')
+    @if($credito->calculo_interes === 'diario')
+        <p class="page-subtitle">El plan muestra capital e intereses devengados, sin intereses de períodos futuros. Último cálculo: {{ $credito->fecha_ultimo_devengo?->format('d/m/Y') ?? 'pendiente' }}. Al registrar un pago se actualizan los importes hasta su fecha.</p>
+    @endif
 
     <div class="page-header">
         <div class="page-header-left">
@@ -39,6 +42,9 @@
             </div>
         </div>
         <div class="page-actions" style="display: flex; gap: 0.75rem;">
+            @if(config('erp.modo_academico') && $credito->venta)
+                @can('view', $credito->venta)<a class="btn btn-secondary" href="{{ route('facturacion.json-academico', $credito->venta) }}">Ver JSON académico</a>@endcan
+            @endif
             @can('expedientes.view')<a class="btn btn-secondary" href="{{ route('expedientes.credito', $credito) }}">Expediente documental</a>@endcan
             @can('declareUncollectible', $credito)
                 <button type="button" onclick="document.getElementById('modalIncobrable').style.display='flex'" class="btn btn-secondary">Trasladar a incobrables</button>
@@ -108,7 +114,7 @@
             <div>
                 <div style="font-size: 0.75rem; color: var(--neutral-500); margin-bottom: 0.25rem;">TIPO DOCUMENTO</div>
                 <div style="font-weight: 600;">
-                    @php $tiposDoc = ['01'=>'FCF','03'=>'CCF','11'=>'Ticket','05'=>'NC','06'=>'ND']; @endphp
+                    @php $tiposDoc = ['01'=>'FCF','03'=>'CCF','TL'=>'Ticket','05'=>'NC','06'=>'ND']; @endphp
                     {{ $tiposDoc[$credito->venta->tipo_documento] ?? $credito->venta->tipo_documento }}
                 </div>
             </div>

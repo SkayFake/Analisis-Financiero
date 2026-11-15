@@ -2,21 +2,26 @@
 
 namespace App\Livewire\Configuracion;
 
-use Livewire\Component;
-use Livewire\Attributes\Locked;
 use App\Livewire\Concerns\NormalizaDatosSalvador;
-use App\Rules\NitSalvador;
-use App\Rules\TelefonoSalvador;
-use App\Support\ReglasFormulario;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use App\Models\Bodega;
 use App\Models\Categoria;
-use App\Models\Marca;
-use App\Models\Proveedor;
-use App\Models\UnidadMedida;
+use App\Models\Existencia;
 use App\Models\Institucion;
+use App\Models\Marca;
+use App\Models\MovimientoInventario;
+use App\Models\Proveedor;
 use App\Models\Unidad;
+use App\Models\UnidadMedida;
+use App\Rules\NitSalvador;
+use App\Rules\TelefonoSalvador;
+use App\Support\Acceso;
+use App\Support\ReglasFormulario;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+use Livewire\Component;
 
 class CatalogosDashboard extends Component
 {
@@ -26,17 +31,38 @@ class CatalogosDashboard extends Component
 
     #[Locked]
     public $tab = 'bodegas';
+
     public $showModal = false;
+
     public $modalMode = 'create';
+
     #[Locked]
     public $itemId;
 
     // Form states
-    public $nombre, $direccion, $activa = true, $descripcion, $abreviatura, $nit, $telefono, $dias_credito;
-    public $codigo, $institucion_id; // For Institucion and Unidad
+    public $nombre;
+
+    public $direccion;
+
+    public $activa = true;
+
+    public $descripcion;
+
+    public $abreviatura;
+
+    public $nit;
+
+    public $telefono;
+
+    public $dias_credito;
+
+    public $codigo;
+
+    public $institucion_id; // For Institucion and Unidad
 
     public function setTab($tabName)
     {
+        Acceso::exigir('configuracion.manage');
         Validator::make(['tab' => $tabName], ['tab' => ['required', Rule::in(array_keys(self::MODELOS))]])->validate();
         $this->tab = $tabName;
         $this->showModal = false;
@@ -44,6 +70,7 @@ class CatalogosDashboard extends Component
 
     public function create()
     {
+        Acceso::exigir('configuracion.manage');
         $this->reset(['itemId', 'nombre', 'direccion', 'descripcion', 'abreviatura', 'nit', 'telefono', 'dias_credito', 'codigo', 'institucion_id']);
         $this->activa = true;
         $this->dias_credito = 0;
@@ -53,6 +80,7 @@ class CatalogosDashboard extends Component
 
     public function edit($id)
     {
+        Acceso::exigir('configuracion.manage');
         $this->resetValidation();
         $this->itemId = $id;
         $this->modalMode = 'edit';
@@ -104,6 +132,7 @@ class CatalogosDashboard extends Component
 
     public function save()
     {
+        Acceso::exigir('configuracion.manage');
         Validator::make(['tab' => $this->tab], ['tab' => ['required', Rule::in(array_keys(self::MODELOS))]])->validate();
         $this->normalizarCampos(['nombre', 'direccion', 'descripcion', 'abreviatura', 'nit', 'telefono', 'codigo']);
         $rules = ['nombre' => 'required|string|max:255|regex:/[\p{L}\p{N}]/u'];
@@ -132,14 +161,30 @@ class CatalogosDashboard extends Component
 
     public function delete($id)
     {
+        Acceso::exigir('configuracion.manage');
         switch ($this->tab) {
-            case 'bodegas': Bodega::findOrFail($id)->delete(); break;
-            case 'categorias': Categoria::findOrFail($id)->delete(); break;
-            case 'marcas': Marca::findOrFail($id)->delete(); break;
-            case 'unidades': UnidadMedida::findOrFail($id)->delete(); break;
-            case 'proveedores': Proveedor::findOrFail($id)->delete(); break;
-            case 'instituciones': Institucion::findOrFail($id)->delete(); break;
-            case 'unidades_organizativas': Unidad::findOrFail($id)->delete(); break;
+            case 'bodegas':
+                DB::transaction(function () use ($id) {
+                    $bodega = Bodega::whereKey($id)->lockForUpdate()->firstOrFail();
+                    if (Existencia::where('bodega_id', $id)->exists()
+                        || MovimientoInventario::where('bodega_origen_id', $id)->orWhere('bodega_destino_id', $id)->exists()) {
+                        throw ValidationException::withMessages(['bodega' => 'Desactive la bodega: tiene existencias o movimientos históricos.']);
+                    }
+                    $bodega->delete();
+                });
+                break;
+            case 'categorias': Categoria::findOrFail($id)->delete();
+                break;
+            case 'marcas': Marca::findOrFail($id)->delete();
+                break;
+            case 'unidades': UnidadMedida::findOrFail($id)->delete();
+                break;
+            case 'proveedores': Proveedor::findOrFail($id)->delete();
+                break;
+            case 'instituciones': Institucion::findOrFail($id)->delete();
+                break;
+            case 'unidades_organizativas': Unidad::findOrFail($id)->delete();
+                break;
         }
         session()->flash('success', 'Registro eliminado exitosamente.');
     }
@@ -151,6 +196,8 @@ class CatalogosDashboard extends Component
 
     public function render()
     {
+        Acceso::exigir('configuracion.manage');
+
         return view('livewire.configuracion.catalogos-dashboard', [
             'bodegas' => Bodega::all(),
             'categorias' => Categoria::all(),

@@ -8,6 +8,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    'modo_academico' => env('ERP_MODO_ACADEMICO', true),
+    'tope_academico_efectivo' => 100.0, // Ejemplo didáctico: no es una tasa legal del BCR.
+
+    'creditos' => ['limites_legales' => json_decode(env('ERP_CREDIT_LIMITS_JSON', '[]'), true, 512, JSON_THROW_ON_ERROR)], // Cargar únicamente topes BCR verificados por segmento, vigencia y monto; ver docs.
+
     'currency' => env('ERP_CURRENCY', 'USD'),
     'country' => env('ERP_COUNTRY', 'SV'),
     'currency_symbol' => '$',

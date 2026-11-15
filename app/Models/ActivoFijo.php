@@ -9,14 +9,16 @@ class ActivoFijo extends Model
     protected $table = 'activos_fijos';
 
     protected $fillable = [
+        'clase_fiscal', 'porcentaje_fiscal', 'fecha_inicio_uso', 'valor_bien_nuevo', 'valor_aduana', 'base_fiscal_verificada',
         'unidad_id', 'categoria_id', 'correlativo', 'codigo_inventario',
         'nombre', 'descripcion', 'fecha_adquisicion', 'valor_adquisicion',
         'valor_residual', 'es_usado', 'anios_uso_previo',
         'maquinaria_importada_exenta', 'valor_sujeto_depreciacion',
-        'depreciacion_acumulada', 'estado', 'fecha_baja', 'motivo_baja'
+        'depreciacion_acumulada', 'estado', 'fecha_baja', 'motivo_baja',
     ];
 
     protected $casts = [
+        'fecha_inicio_uso' => 'date', 'base_fiscal_verificada' => 'boolean',
         'fecha_adquisicion' => 'date',
         'fecha_baja' => 'date',
         'valor_adquisicion' => 'decimal:4',

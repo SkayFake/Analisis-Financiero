@@ -2,19 +2,23 @@
 
 namespace App\Services;
 
+use App\Models\Cartera;
+use App\Models\Cliente;
+use App\Models\CondicionCredito;
 use App\Models\Credito;
 use App\Models\Cuota;
 use App\Models\Pago;
 use App\Models\PagoCuota;
+use App\Models\User;
+use App\Models\Vendedor;
 use App\Models\Venta;
-use App\Models\Cliente;
-use App\Models\CondicionCredito;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
-use InvalidArgumentException;
-use App\Rules\{DuiSalvador, TelefonoSalvador};
+use App\Rules\DuiSalvador;
+use App\Rules\TelefonoSalvador;
 use App\Support\DatosSalvador;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 
 /**
  * Servicio de Crédito Comercial.
@@ -37,12 +41,9 @@ class CreditoService
      * Valida las reglas de elegibilidad del crédito comercial.
      * Centraliza las reglas compartidas entre creación manual y punto de venta.
      *
-     * @param Cliente $cliente
-     * @param CondicionCredito $condicion
-     * @param int $numeroCuotas
-     * @param Carbon $fechaPrimeraCuota
-     * @param array $documentacion ['dui_verificado' => bool, 'tiene_fiador' => bool, 'referencia_verificada' => bool]
-     * @param bool $validarRequisitosParaCreacion Si es false, permite guardar solicitudes pendientes con requisitos incompletos.
+     * @param  array  $documentacion  ['dui_verificado' => bool, 'tiene_fiador' => bool, 'referencia_verificada' => bool]
+     * @param  bool  $validarRequisitosParaCreacion  Si es false, permite guardar solicitudes pendientes con requisitos incompletos.
+     *
      * @throws InvalidArgumentException
      */
     public function validarElegibilidadCredito(
@@ -53,16 +54,16 @@ class CreditoService
         array $documentacion = [],
         bool $validarRequisitosParaCreacion = false
     ): void {
-        if (!$condicion->activa) {
+        if (! $condicion->activa) {
             throw new InvalidArgumentException("La condición de crédito '{$condicion->nombre}' está inactiva y no admite nuevos créditos.");
         }
 
-        if (!$cliente->activo) {
+        if (! $cliente->activo) {
             throw new InvalidArgumentException("El cliente '{$cliente->nombre}' no está habilitado para operaciones comerciales.");
         }
 
         if ($numeroCuotas < 1) {
-            throw new InvalidArgumentException("El número de cuotas debe ser al menos 1.");
+            throw new InvalidArgumentException('El número de cuotas debe ser al menos 1.');
         }
         if ($numeroCuotas > 120) {
             throw new InvalidArgumentException('El número de cuotas supera el límite de 120 de la aplicación.');
@@ -72,8 +73,8 @@ class CreditoService
             throw new InvalidArgumentException("El número de cuotas ({$numeroCuotas}) supera el límite máximo permitido ({$condicion->plazo_maximo_cuotas}) para la condición '{$condicion->nombre}'.");
         }
 
-        if ($fechaPrimeraCuota->isPast() && !$fechaPrimeraCuota->isToday()) {
-            throw new InvalidArgumentException("La primera fecha de pago debe ser hoy o una fecha futura.");
+        if ($fechaPrimeraCuota->isPast() && ! $fechaPrimeraCuota->isToday()) {
+            throw new InvalidArgumentException('La primera fecha de pago debe ser hoy o una fecha futura.');
         }
 
         if ($validarRequisitosParaCreacion) {
@@ -89,19 +90,19 @@ class CreditoService
         CondicionCredito $condicion,
         array $documentacion = []
     ): void {
-        $duiVerificado = !empty($documentacion['dui_verificado']);
-        $tieneFiador = !empty($documentacion['tiene_fiador']);
+        $duiVerificado = ! empty($documentacion['dui_verificado']);
+        $tieneFiador = ! empty($documentacion['tiene_fiador']);
 
         if ($condicion->requiere_dui) {
             $duiPresente = app(ExpedienteService::class)->identidad($cliente)['dui_valido'];
-            if (!$duiPresente || !$duiVerificado) {
-                throw new InvalidArgumentException("La condición de crédito exige presentar y verificar el DUI del cliente.");
+            if (! $duiPresente || ! $duiVerificado) {
+                throw new InvalidArgumentException('La condición de crédito exige presentar y verificar el DUI del cliente.');
             }
         }
 
         if ($condicion->requiere_fiador) {
-            if (!$tieneFiador) {
-                throw new InvalidArgumentException("La condición de crédito exige registrar al menos un fiador.");
+            if (! $tieneFiador) {
+                throw new InvalidArgumentException('La condición de crédito exige registrar al menos un fiador.');
             }
         }
     }
@@ -121,17 +122,18 @@ class CreditoService
     {
         $faltantes = [];
         $condicion = $credito->condicionCredito;
-        if (!$condicion) {
+        if (! $condicion) {
             $faltantes[] = 'No tiene condición de crédito asignada.';
+
             return $faltantes;
         }
 
         if ($condicion->requiere_dui) {
             $cliente = $credito->cliente;
-            if (!$cliente || !app(ExpedienteService::class)->identidad($cliente)['dui_valido']) {
+            if (! $cliente || ! app(ExpedienteService::class)->identidad($cliente)['dui_valido']) {
                 $faltantes[] = 'Número de DUI no registrado o con formato/verificador inválido.';
             }
-            if (!$credito->expediente_requerido && !$credito->dui_verificado) {
+            if (! $credito->expediente_requerido && ! $credito->dui_verificado) {
                 $faltantes[] = 'Verificación del documento DUI.';
             }
         }
@@ -152,9 +154,7 @@ class CreditoService
     /**
      * Crea un crédito comercial a partir de una venta al crédito.
      *
-     * @param Venta $venta Venta con condicion_operacion='2'
-     * @param array $condiciones
-     * @return Credito
+     * @param  Venta  $venta  Venta con condicion_operacion='2'
      */
     public function crearCreditoDesdeVenta(Venta $venta, array $condiciones): Credito
     {
@@ -168,6 +168,7 @@ class CreditoService
             'fiador.observaciones' => 'nullable|string|max:2000',
             'fiadores' => 'prohibited',
         ])->validate();
+
         return DB::transaction(function () use ($venta, $condiciones) {
             // Bloqueo pesimista para evitar carreras y créditos duplicados
             $ventaLocked = Venta::where('id', $venta->id)->lockForUpdate()->firstOrFail();
@@ -181,18 +182,18 @@ class CreditoService
             }
 
             if (empty($condiciones['condicion_credito_id'])) {
-                throw new InvalidArgumentException("Debe seleccionar una condición de crédito válida.");
+                throw new InvalidArgumentException('Debe seleccionar una condición de crédito válida.');
             }
 
             $condicion = CondicionCredito::findOrFail($condiciones['condicion_credito_id']);
             $cliente = Cliente::findOrFail($ventaLocked->cliente_id);
             $vendedorId = $condiciones['vendedor_id'] ?? $ventaLocked->vendedor_id ?? $cliente->vendedor_id;
-            if ($vendedorId !== null && (!is_scalar($vendedorId) || !ctype_digit((string) $vendedorId)
-                || !\App\Models\Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first())) {
+            if ($vendedorId !== null && (! is_scalar($vendedorId) || ! ctype_digit((string) $vendedorId)
+                || ! Vendedor::whereKey($vendedorId)->where('activo', true)->sharedLock()->first())) {
                 throw new InvalidArgumentException('El responsable del crédito debe ser un vendedor activo.');
             }
             $carteraId = $condiciones['cartera_id'] ?? ((int) $cliente->vendedor_id === (int) $vendedorId ? $cliente->cartera_id : null);
-            if ($carteraId !== null && !\App\Models\Cartera::whereKey($carteraId)->where('activa', true)
+            if ($carteraId !== null && ! Cartera::whereKey($carteraId)->where('activa', true)
                 ->where(fn ($q) => $q->whereNull('vendedor_id')->orWhere('vendedor_id', $vendedorId))->exists()) {
                 throw new InvalidArgumentException('La cartera debe estar activa y corresponder al responsable del crédito.');
             }
@@ -203,9 +204,9 @@ class CreditoService
                 : now()->addMonth();
 
             $documentacion = [
-                'dui_verificado' => !empty($condiciones['dui_verificado']),
-                'tiene_fiador' => !empty($condiciones['fiador']) || !empty($condiciones['fiadores']),
-                'referencia_verificada' => !empty($condiciones['referencia_verificada']),
+                'dui_verificado' => ! empty($condiciones['dui_verificado']),
+                'tiene_fiador' => ! empty($condiciones['fiador']) || ! empty($condiciones['fiadores']),
+                'referencia_verificada' => ! empty($condiciones['referencia_verificada']),
                 'dui_cliente' => $cliente->dui,
             ];
 
@@ -228,10 +229,12 @@ class CreditoService
             }
 
             $montoFactura = (float) $ventaLocked->total_pagar;
+            $limiteLegal = app(LimiteCreditoService::class)->validar($condicion, $montoFactura);
+
             $esClienteFrecuente = $this->esClienteFrecuente($cliente, $condicion);
 
             $expedienteRequerido = (bool) config('expedientes.exigir_creditos_nuevos', true);
-            $autoAprobado = !$expedienteRequerido && $requisitosCompletos
+            $autoAprobado = ! $expedienteRequerido && $requisitosCompletos
                 && $esClienteFrecuente
                 && $montoFactura <= (float) $condicion->monto_auto_aprobado;
 
@@ -248,42 +251,44 @@ class CreditoService
             );
 
             $credito = Credito::create([
+                'calculo_interes' => 'diario',
+                'limite_legal' => $limiteLegal,
                 'expediente_requerido' => $expedienteRequerido,
                 'requisitos_expediente' => $expedienteRequerido ? app(ExpedienteService::class)->politica($cliente) : null,
-                'numero'               => Credito::generarNumero(),
-                'cliente_id'           => $ventaLocked->cliente_id,
-                'venta_id'             => $ventaLocked->id,
+                'numero' => Credito::generarNumero(),
+                'cliente_id' => $ventaLocked->cliente_id,
+                'venta_id' => $ventaLocked->id,
                 'condicion_credito_id' => $condicion->id,
-                'vendedor_id'          => $vendedorId,
-                'vendedor_origen_id'   => $ventaLocked->vendedor_id,
-                'cartera_id'           => $carteraId,
-                'politica_cobro_id'    => $condiciones['politica_cobro_id'] ?? null,
-                'monto_original'       => $montoFactura,
-                'saldo_actual'         => $montoFactura,
-                'interes_acumulado'    => 0,
-                'mora_acumulada'       => 0,
-                'tasa_interes_anual'   => $condicion->tasa_interes_anual,
-                'tasa_mora_mensual'    => $condicion->tasa_mora_mensual,
-                'dias_gracia'          => $condicion->dias_gracia,
-                'numero_cuotas'        => $numeroCuotas,
-                'frecuencia_pago'      => $condicion->frecuencia_pago,
-                'plazo_dias'           => $plazoDias,
-                'fecha_solicitud'      => $ventaLocked->fecha_emision ?? now(),
-                'fecha_aprobacion'     => $fechaAprobacion,
-                'fecha_primera_cuota'  => $fechaPrimeraCuota,
-                'fecha_vencimiento'    => $fechaVencimiento,
-                'estado'               => $estado,
-                'observaciones'        => $condiciones['observaciones'] ?? null,
-                'aprobado_por'         => $autoAprobado ? auth()->id() : null,
-                'motivo_aprobacion'    => $autoAprobado
+                'vendedor_id' => $vendedorId,
+                'vendedor_origen_id' => $ventaLocked->vendedor_id,
+                'cartera_id' => $carteraId,
+                'politica_cobro_id' => $condiciones['politica_cobro_id'] ?? null,
+                'monto_original' => $montoFactura,
+                'saldo_actual' => $montoFactura,
+                'interes_acumulado' => 0,
+                'mora_acumulada' => 0,
+                'tasa_interes_anual' => $condicion->tasa_interes_anual,
+                'tasa_mora_mensual' => $condicion->tasa_mora_mensual,
+                'dias_gracia' => $condicion->dias_gracia,
+                'numero_cuotas' => $numeroCuotas,
+                'frecuencia_pago' => $condicion->frecuencia_pago,
+                'plazo_dias' => $plazoDias,
+                'fecha_solicitud' => $ventaLocked->fecha_emision ?? now(),
+                'fecha_aprobacion' => $fechaAprobacion,
+                'fecha_primera_cuota' => $fechaPrimeraCuota,
+                'fecha_vencimiento' => $fechaVencimiento,
+                'estado' => $estado,
+                'observaciones' => $condiciones['observaciones'] ?? null,
+                'aprobado_por' => $autoAprobado ? auth()->id() : null,
+                'motivo_aprobacion' => $autoAprobado
                     ? 'Aprobación automática — cliente frecuente, requisitos completos y monto dentro del límite.'
                     : null,
-                'dui_verificado'       => !$expedienteRequerido && !empty($condiciones['dui_verificado']),
-                'referencia_verificada' => !empty($condiciones['referencia_verificada']),
+                'dui_verificado' => ! $expedienteRequerido && ! empty($condiciones['dui_verificado']),
+                'referencia_verificada' => ! empty($condiciones['referencia_verificada']),
             ]);
 
             // Guardar fiador si viene en los datos
-            if (!empty($condiciones['fiador']) && is_array($condiciones['fiador'])) {
+            if (! empty($condiciones['fiador']) && is_array($condiciones['fiador'])) {
                 $credito->fiadores()->create($condiciones['fiador']);
             }
 
@@ -298,8 +303,10 @@ class CreditoService
                 $this->generarPlanPago($credito);
             }
 
-            if ($credito->vendedor) app(VendedorService::class)->auditar($credito->vendedor, 'credito_registrado', 'creditos', $credito->id, null,
-                $credito->only(['numero', 'venta_id', 'vendedor_id', 'vendedor_origen_id', 'monto_original', 'estado']), 'Asignación inicial del crédito comercial', auth()->user());
+            if ($credito->vendedor) {
+                app(VendedorService::class)->auditar($credito->vendedor, 'credito_registrado', 'creditos', $credito->id, null,
+                    $credito->only(['numero', 'venta_id', 'vendedor_id', 'vendedor_origen_id', 'monto_original', 'estado']), 'Asignación inicial del crédito comercial', auth()->user());
+            }
 
             return $credito;
         });
@@ -316,11 +323,12 @@ class CreditoService
     public function calcularTasaPeriodo(float $tasaAnualPorcentaje, string $frecuencia): float
     {
         $tasaDecimal = $tasaAnualPorcentaje / 100;
+
         return match ($frecuencia) {
-            'semanal'   => $tasaDecimal / 52,
+            'semanal' => $tasaDecimal / 52,
             'quincenal' => $tasaDecimal / 24,
-            'mensual'   => $tasaDecimal / 12,
-            default     => $tasaDecimal / 12,
+            'mensual' => $tasaDecimal / 12,
+            default => $tasaDecimal / 12,
         };
     }
 
@@ -335,12 +343,15 @@ class CreditoService
      */
     public function generarPlanPago(Credito $credito): void
     {
+        if ($credito->pagos()->exists()) {
+            throw new InvalidArgumentException('No se puede regenerar un plan con pagos: requiere una reestructuración documentada.');
+        }
         $credito->cuotas()->delete();
 
-        $monto        = round((float) $credito->monto_original, 2);
-        $n            = $credito->numero_cuotas;
-        $tasaPeriodo  = $this->calcularTasaPeriodo((float) $credito->tasa_interes_anual, $credito->frecuencia_pago);
-        $fechaInicio  = $credito->fecha_primera_cuota ?? now()->addMonth();
+        $monto = round((float) $credito->monto_original, 2);
+        $n = $credito->numero_cuotas;
+        $tasaPeriodo = $credito->calculo_interes === 'diario' ? 0 : $this->calcularTasaPeriodo((float) $credito->tasa_interes_anual, $credito->frecuencia_pago);
+        $fechaInicio = $credito->fecha_primera_cuota ?? now()->addMonth();
 
         if ($tasaPeriodo > 0) {
             // Sistema francés: cuota fija = M * [r(1+r)^n] / [(1+r)^n - 1]
@@ -368,7 +379,7 @@ class CreditoService
                 $capital = ($tasaPeriodo > 0)
                     ? round($cuotaFija - $interes, 2)
                     : $cuotaFija;
-                
+
                 // Si la división dejó menos saldo que la cuota fija
                 if ($capital > $saldoPendiente) {
                     $capital = $saldoPendiente;
@@ -386,18 +397,18 @@ class CreditoService
             );
 
             $cuotas[] = [
-                'credito_id'        => $credito->id,
-                'numero_cuota'      => $i,
+                'credito_id' => $credito->id,
+                'numero_cuota' => $i,
                 'fecha_vencimiento' => $fechaVencimientoCuota->toDateString(),
-                'capital'           => $capital,
-                'interes'           => $interes,
-                'total'             => $totalCuota,
-                'mora'              => 0.00,
-                'saldo_pendiente'   => $saldoPendiente,
-                'monto_pagado'      => 0.00,
-                'estado'            => 'pendiente',
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'capital' => $capital,
+                'interes' => $interes,
+                'total' => $totalCuota,
+                'mora' => 0.00,
+                'saldo_pendiente' => $saldoPendiente,
+                'monto_pagado' => 0.00,
+                'estado' => 'pendiente',
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
@@ -406,6 +417,7 @@ class CreditoService
         // Actualizar interés acumulado en el crédito
         $credito->update([
             'interes_acumulado' => $totalInteresAcumulado,
+            'fecha_ultimo_devengo' => $credito->calculo_interes === 'diario' ? ($credito->fecha_aprobacion ?? $credito->fecha_solicitud) : null,
         ]);
     }
 
@@ -422,8 +434,14 @@ class CreditoService
                 throw new InvalidArgumentException('Solo se pueden aprobar créditos en estado pendiente_aprobacion.');
             }
 
+            if ($credito->calculo_interes === 'diario') {
+                $condicion = clone $credito->condicionCredito;
+                $condicion->tasa_interes_anual = $credito->tasa_interes_anual;
+                $condicion->tasa_mora_mensual = $credito->tasa_mora_mensual;
+                $credito->limite_legal = app(LimiteCreditoService::class)->validar($condicion, (float) $credito->monto_original);
+            }
             $faltantes = $this->obtenerRequisitosFaltantes($credito);
-            if (!empty($faltantes)) {
+            if (! empty($faltantes)) {
                 $lista = implode(', ', $faltantes);
                 throw new InvalidArgumentException("No se puede aprobar el crédito porque no cumple los requisitos: {$lista}");
             }
@@ -435,14 +453,14 @@ class CreditoService
                     'comprobacion' => $expedientes->lista($credito),
                     'cliente' => $expedientes->identidad($credito->cliente),
                     'fiadores' => $credito->fiadores()->get()->toArray(),
-                ], $motivo, \App\Models\User::find($usuarioId ?? auth()->id()));
+                ], $motivo, User::find($usuarioId ?? auth()->id()));
                 $credito->dui_verificado = $expedientes->identidad($credito->cliente)['dui_valido'];
             }
 
             $credito->update([
-                'estado'            => 'vigente',
-                'fecha_aprobacion'  => now(),
-                'aprobado_por'      => $usuarioId ?? auth()->id(),
+                'estado' => 'vigente',
+                'fecha_aprobacion' => now(),
+                'aprobado_por' => $usuarioId ?? auth()->id(),
                 'motivo_aprobacion' => $motivo,
             ]);
 
@@ -465,8 +483,8 @@ class CreditoService
             }
 
             $credito->update([
-                'estado'            => 'rechazado',
-                'aprobado_por'      => $usuarioId ?? auth()->id(),
+                'estado' => 'rechazado',
+                'aprobado_por' => $usuarioId ?? auth()->id(),
                 'motivo_aprobacion' => $motivo,
             ]);
 
@@ -478,9 +496,7 @@ class CreditoService
      * Procesa un pago sobre el crédito, distribuyéndolo entre las cuotas pendientes.
      * Orden estricto: mora → interés → capital sobre cuotas en orden de vencimiento.
      *
-     * @param Credito $credito
-     * @param array $datos ['monto', 'forma_pago', 'fecha_pago', 'referencia', 'observaciones', 'recibido_por']
-     * @return Pago
+     * @param  array  $datos  ['monto', 'forma_pago', 'fecha_pago', 'referencia', 'observaciones', 'recibido_por']
      */
     public function procesarPago(Credito $credito, array $datos): Pago
     {
@@ -488,16 +504,32 @@ class CreditoService
             // Bloqueo pesimista del crédito y sus cuotas
             $credito = Credito::where('id', $credito->id)->lockForUpdate()->firstOrFail();
 
-            if (!in_array($credito->estado, ['vigente', 'vencido'])) {
+            if (! in_array($credito->estado, ['vigente', 'vencido'])) {
                 throw new InvalidArgumentException("No se pueden registrar pagos en un crédito con estado '{$credito->estado}'.");
             }
 
             $montoPago = round((float) $datos['monto'], 2);
             if ($montoPago <= 0) {
-                throw new InvalidArgumentException("El monto a pagar debe ser mayor a 0.");
+                throw new InvalidArgumentException('El monto a pagar debe ser mayor a 0.');
             }
 
+            $fechaPago = Carbon::parse($datos['fecha_pago'] ?? today()->toDateString())->startOfDay();
+            if ($fechaPago->gt(today()) || $fechaPago->lt(($credito->fecha_aprobacion ?? $credito->fecha_solicitud)->copy()->startOfDay())) {
+                throw new InvalidArgumentException('La fecha del pago debe estar entre el inicio del crédito y hoy.');
+            }
+            $ultimoPago = $credito->pagos()->max('fecha_pago');
+            if ($ultimoPago && $fechaPago->lt(Carbon::parse($ultimoPago))) {
+                throw new InvalidArgumentException('Registre los pagos en orden de fecha; un pago retroactivo requiere conciliación.');
+            }
             app(ConciliacionPagosService::class)->conciliar($credito);
+            if ($credito->calculo_interes === 'diario') {
+                app(DevengoCreditoService::class)->actualizar($credito, $fechaPago->toDateString());
+                $credito->refresh();
+            } elseif ((float) $credito->tasa_interes_anual > 0
+                && $montoPago > round($credito->cuotas()->where('fecha_vencimiento', '<=', $fechaPago->toDateString())->get()->sum('saldo_por_pagar'), 2)
+                && $credito->cuotas()->where('fecha_vencimiento', '>', $fechaPago->toDateString())->where('interes', '>', 0)->exists()) {
+                throw new InvalidArgumentException('Este crédito histórico necesita una liquidación revisada para aceptar anticipos sin cobrar intereses futuros. No se modificaron sus recibos.');
+            }
 
             // Obtener todas las cuotas pendientes ordenadas por fecha de vencimiento y número
             $cuotas = Cuota::where('credito_id', $credito->id)
@@ -536,13 +568,13 @@ class CreditoService
 
             // Si no hay cuotas pendientes y el saldo es 0
             if (empty($cuotasDetalle)) {
-                throw new InvalidArgumentException("El crédito no posee cuotas pendientes de pago.");
+                throw new InvalidArgumentException('El crédito no posee cuotas pendientes de pago.');
             }
 
             // Rechazar importes superiores a la deuda pendiente mientras no exista una política explícita de saldo a favor
             if ($montoPago > $totalDeudaPendiente) {
                 throw new InvalidArgumentException(sprintf(
-                    "El monto ingresado ($%.2f) excede la deuda exigible pendiente ($%.2f).",
+                    'El monto ingresado ($%.2f) excede la deuda exigible pendiente ($%.2f).',
                     $montoPago,
                     $totalDeudaPendiente
                 ));
@@ -601,39 +633,39 @@ class CreditoService
 
             // Crear el registro de Pago (Recibo)
             $pago = Pago::create([
-                'credito_id'     => $credito->id,
-                'cuota_id'       => $primeraCuotaId,
-                'numero_recibo'  => Pago::generarNumeroRecibo(),
-                'fecha_pago'     => $datos['fecha_pago'] ?? now()->toDateString(),
-                'monto_total'    => $montoPago,
-                'abono_capital'  => $pagoTotalCapital,
-                'pago_interes'   => $pagoTotalInteres,
-                'pago_mora'      => $pagoTotalMora,
-                'saldo_despues'  => $nuevoSaldo,
-                'forma_pago'     => $datos['forma_pago'] ?? 'efectivo',
-                'referencia'     => $datos['referencia'] ?? null,
-                'observaciones'  => $datos['observaciones'] ?? null,
-                'recibido_por'   => $datos['recibido_por'] ?? auth()->id(),
-                'vendedor_id'    => $credito->vendedor_id,
+                'credito_id' => $credito->id,
+                'cuota_id' => $primeraCuotaId,
+                'numero_recibo' => Pago::generarNumeroRecibo(),
+                'fecha_pago' => $datos['fecha_pago'] ?? now()->toDateString(),
+                'monto_total' => $montoPago,
+                'abono_capital' => $pagoTotalCapital,
+                'pago_interes' => $pagoTotalInteres,
+                'pago_mora' => $pagoTotalMora,
+                'saldo_despues' => $nuevoSaldo,
+                'forma_pago' => $datos['forma_pago'] ?? 'efectivo',
+                'referencia' => $datos['referencia'] ?? null,
+                'observaciones' => $datos['observaciones'] ?? null,
+                'recibido_por' => $datos['recibido_por'] ?? auth()->id(),
+                'vendedor_id' => $credito->vendedor_id,
                 'vendedor_reconstruido' => false,
             ]);
 
             // Guardar aplicaciones individuales y actualizar cuotas
             foreach ($aplicacionesPorCrear as $apl) {
                 PagoCuota::create([
-                    'pago_id'       => $pago->id,
-                    'cuota_id'      => $apl['cuota']->id,
-                    'monto_total'   => $apl['monto_total'],
+                    'pago_id' => $pago->id,
+                    'cuota_id' => $apl['cuota']->id,
+                    'monto_total' => $apl['monto_total'],
                     'abono_capital' => $apl['abono_capital'],
-                    'pago_interes'  => $apl['pago_interes'],
-                    'pago_mora'     => $apl['pago_mora'],
+                    'pago_interes' => $apl['pago_interes'],
+                    'pago_mora' => $apl['pago_mora'],
                 ]);
 
                 $estaPagada = $apl['monto_pagado_total_cuota'] >= $apl['deuda_total_cuota'];
                 $apl['cuota']->update([
                     'monto_pagado' => $apl['monto_pagado_total_cuota'],
-                    'estado'       => $estaPagada ? 'pagada' : 'parcial',
-                    'fecha_pago'   => $estaPagada ? ($datos['fecha_pago'] ?? now()->toDateString()) : null,
+                    'estado' => $estaPagada ? 'pagada' : 'parcial',
+                    'fecha_pago' => $estaPagada ? ($datos['fecha_pago'] ?? now()->toDateString()) : null,
                 ]);
             }
 
@@ -663,36 +695,9 @@ class CreditoService
      */
     public function calcularMora(Credito $credito): array
     {
-        $cuotasVencidas = $credito->cuotas()
-            ->where('estado', '!=', 'pagada')
-            ->where('fecha_vencimiento', '<', now()->toDateString())
-            ->get();
+        app(ConciliacionPagosService::class)->conciliar($credito);
 
-        $totalMora = 0.0;
-        $diasMoraMax = 0;
-
-        foreach ($cuotasVencidas as $cuota) {
-            $diasMora = $cuota->actualizarDiasMora();
-            $diasMoraMax = max($diasMoraMax, $diasMora);
-
-            if ($diasMora > 0) {
-                $tasaDiaria = ((float) $credito->tasa_mora_mensual / 100) / 30;
-                $mora = round((float) $cuota->restante * $tasaDiaria * $diasMora, 2);
-                $cuota->update(['mora' => $mora]);
-                $totalMora = round($totalMora + $mora, 2);
-            }
-        }
-
-        $credito->update([
-            'dias_mora'      => $diasMoraMax,
-            'mora_acumulada' => $totalMora,
-        ]);
-
-        return [
-            'total_mora'      => $totalMora,
-            'dias_mora'       => $diasMoraMax,
-            'cuotas_vencidas' => $cuotasVencidas->count(),
-        ];
+        return app(DevengoCreditoService::class)->actualizar($credito);
     }
 
     /**
@@ -711,16 +716,16 @@ class CreditoService
      * Calcula la fecha de vencimiento según la frecuencia de pago.
      * Soporta semanal, quincenal y mensual con manejo de fin de mes y años bisiestos.
      *
-     * @param Carbon $base         Fecha base (primera cuota)
-     * @param int    $n            Número de cuota (1-based si baseIsFirst=true)
-     * @param string $frecuencia   semanal|quincenal|mensual
-     * @param bool   $baseIsFirst  Si true, cuota 1 es la fecha base y cuota N está a (N-1) períodos
+     * @param  Carbon  $base  Fecha base (primera cuota)
+     * @param  int  $n  Número de cuota (1-based si baseIsFirst=true)
+     * @param  string  $frecuencia  semanal|quincenal|mensual
+     * @param  bool  $baseIsFirst  Si true, cuota 1 es la fecha base y cuota N está a (N-1) períodos
      */
     public function calcularFechaVencimiento(
         Carbon $base,
-        int    $n,
+        int $n,
         string $frecuencia,
-        bool   $baseIsFirst = false
+        bool $baseIsFirst = false
     ): Carbon {
         $periodos = $baseIsFirst ? ($n - 1) : $n;
         if ($periodos <= 0) {

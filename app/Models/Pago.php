@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CorrelativoService;
 use Illuminate\Database\Eloquent\Model;
 
 class Pago extends Model
@@ -30,7 +31,10 @@ class Pago extends Model
         return $this->belongsTo(Credito::class);
     }
 
-    public function vendedor() { return $this->belongsTo(Vendedor::class); }
+    public function vendedor()
+    {
+        return $this->belongsTo(Vendedor::class);
+    }
 
     public function cuota()
     {
@@ -59,18 +63,11 @@ class Pago extends Model
      */
     public static function generarNumeroRecibo(): string
     {
-        $año = date('Y');
-        $mes = date('m');
-        $ultimo = static::where('numero_recibo', 'like', "REC-{$año}{$mes}-%")
-            ->orderByRaw("CAST(SUBSTRING(numero_recibo FROM '[0-9]+$') AS INTEGER) DESC")
-            ->value('numero_recibo');
+        $prefijo = 'REC-'.now()->format('Ym').'-';
+        $max = (int) static::query()->where('numero_recibo', 'like', $prefijo.'%')
+            ->selectRaw("COALESCE(MAX(CAST(SUBSTRING(numero_recibo FROM '[0-9]+$') AS BIGINT)),0) AS n")->value('n');
+        $seq = app(CorrelativoService::class)->siguiente($prefijo, $max);
 
-        if ($ultimo) {
-            $seq = (int) substr($ultimo, strrpos($ultimo, '-') + 1) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        return sprintf('REC-%s%s-%06d', $año, $mes, $seq);
+        return sprintf('REC-%s-%06d', now()->format('Ym'), $seq);
     }
 }

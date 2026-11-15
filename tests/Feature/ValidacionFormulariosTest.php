@@ -18,6 +18,7 @@ use App\Models\Unidad;
 use App\Models\UnidadMedida;
 use App\Models\User;
 use App\Models\Vendedor;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,7 +35,8 @@ class ValidacionFormulariosTest extends TestCase
         parent::setUp();
         // Escenarios del flujo anterior; el expediente obligatorio se cubre en ExpedientesTest.
         config(['expedientes.exigir_creditos_nuevos' => false]);
-        $this->actingAs(User::factory()->create());
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->actingAs(tap(User::factory()->create(), fn ($u) => $u->assignRole('super-admin')));
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
@@ -181,7 +183,7 @@ class ValidacionFormulariosTest extends TestCase
         $categoria = CategoriaActivo::create(['codigo' => 'EQUI', 'nombre' => 'Equipo', 'porcentaje_depreciacion' => 20]);
         $form = Livewire::test(ActivoFijoDashboard::class)->call('abrirModalRegistro')
             ->set('form_nombre', 'Computadora')->set('form_unidad_id', $unidad->id)->set('form_categoria_id', $categoria->id)
-            ->set('form_valor_adquisicion', 100)->set('form_valor_residual', 150)
+            ->set('form_clase_fiscal', 'otros_muebles')->set('form_valor_adquisicion', 100)->set('form_valor_residual', 150)
             ->set('form_fecha_adquisicion', now()->addDay()->toDateString())->call('registrarActivo')
             ->assertHasErrors(['form_valor_residual', 'form_fecha_adquisicion']);
         $this->assertDatabaseCount('activos_fijos', 0);

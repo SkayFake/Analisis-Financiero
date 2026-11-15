@@ -2,49 +2,67 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use App\Models\Producto;
-use App\Models\Cliente;
+use App\Livewire\Concerns\NormalizaDatosSalvador;
 use App\Models\Bodega;
-use App\Models\Venta;
+use App\Models\Cliente;
 use App\Models\CondicionCredito;
+use App\Models\Credito;
+use App\Models\Producto;
+use App\Models\Vendedor;
+use App\Models\Venta;
 use App\Services\FacturacionService;
+use App\Support\ReglasFormulario;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Livewire\Concerns\NormalizaDatosSalvador;
-use App\Support\ReglasFormulario;
-use Exception;
+use Livewire\Component;
 
 class PuntoVenta extends Component
 {
     use NormalizaDatosSalvador;
+
     // Cart Data
     public $detalles = [];
+
     public $subtotal = 0;
+
     public $iva = 0;
+
     public $total = 0;
-    
+
     // Header Data
     public $cliente_id = '';
+
     public $vendedor_id = '';
+
     public $bodega_id = 1;
-    public $tipo_documento = '01'; // 01 FCF, 03 CCF, 11 Ticket, 05 NC, 06 ND
+
+    public $tipo_documento = '01'; // 01 FCF, 03 CCF, TL Ticket interno, 05 NC, 06 ND
+
     public $condicion_operacion = '1'; // 1 Contado, 2 Crédito
 
     // Plan de crédito (solo cuando condicion_operacion = '2')
     public $condicion_credito_id = '';
+
     public $numero_cuotas = 1;
+
     public $frecuencia_pago = 'mensual';
+
     public $fecha_primera_cuota = '';
+
     public $dui_verificado = false;
+
     public $referencia_verificada = false;
 
     // Fiador (opcional o requerido si la condición lo pide)
     public $fiador_nombre = '';
+
     public $fiador_dui = '';
+
     public $fiador_telefono = '';
+
     public $fiador_direccion = '';
 
     // Search
@@ -86,7 +104,7 @@ class PuntoVenta extends Component
         $vendedor = $value ? Cliente::find($value)?->vendedor : null;
         $this->vendedor_id = $vendedor?->activo ? $vendedor->id : '';
     }
-    
+
     public function updatedSearchProducto(): void
     {
         $this->validateOnly('searchProducto', ['searchProducto' => 'nullable|string|max:100']);
@@ -94,12 +112,14 @@ class PuntoVenta extends Component
 
     public function getProductosProperty()
     {
-        if (!is_string($this->searchProducto) || mb_strlen($this->searchProducto) < 2 || mb_strlen($this->searchProducto) > 100) return collect();
+        if (! is_string($this->searchProducto) || mb_strlen($this->searchProducto) < 2 || mb_strlen($this->searchProducto) > 100) {
+            return collect();
+        }
 
         return Producto::where('activo', true)
             ->where(function ($q) {
-                $q->where('nombre', 'ilike', '%' . $this->searchProducto . '%')
-                  ->orWhere('codigo', 'ilike', '%' . $this->searchProducto . '%');
+                $q->where('nombre', 'ilike', '%'.$this->searchProducto.'%')
+                    ->orWhere('codigo', 'ilike', '%'.$this->searchProducto.'%');
             })
             ->with(['existencias' => function ($q) {
                 if ($this->bodega_id) {
@@ -117,7 +137,10 @@ class PuntoVenta extends Component
 
     public function getCondicionSeleccionadaProperty()
     {
-        if (!$this->condicion_credito_id) return null;
+        if (! $this->condicion_credito_id) {
+            return null;
+        }
+
         return CondicionCredito::find($this->condicion_credito_id);
     }
 
@@ -134,7 +157,9 @@ class PuntoVenta extends Component
     public function agregarProducto($productoId)
     {
         $producto = Producto::find($productoId);
-        if (!$producto) return;
+        if (! $producto) {
+            return;
+        }
 
         // Stock disponible en la bodega actual
         $stockBodega = $producto->existencias()
@@ -145,7 +170,7 @@ class PuntoVenta extends Component
             $stockBodega = $producto->stock_total;
         }
 
-        $index = collect($this->detalles)->search(fn($item) => $item['producto_id'] == $producto->id);
+        $index = collect($this->detalles)->search(fn ($item) => $item['producto_id'] == $producto->id);
 
         if ($index !== false) {
             $this->detalles[$index]['cantidad']++;
@@ -166,11 +191,14 @@ class PuntoVenta extends Component
 
     public function cambiarCantidad($index, $delta)
     {
-        if (!isset($this->detalles[$index])) return;
+        if (! isset($this->detalles[$index])) {
+            return;
+        }
 
         $nueva = $this->detalles[$index]['cantidad'] + $delta;
         if ($nueva <= 0) {
             $this->removerProducto($index);
+
             return;
         }
 
@@ -207,14 +235,14 @@ class PuntoVenta extends Component
         foreach ($this->detalles as $det) {
             $cant = floatval($det['cantidad'] ?? 0);
             $pu = floatval($det['precio_unitario'] ?? 0);
-            $this->subtotal += ($cant * $pu);
+            $this->subtotal += round($cant * $pu, 2);
         }
-        
+
         if ($this->tipo_documento === '03') {
             $this->iva = round($this->subtotal * 0.13, 2);
             $this->total = $this->subtotal + $this->iva;
         } else {
-            $this->iva = 0;
+            $this->iva = round($this->subtotal - $this->subtotal / 1.13, 2);
             $this->total = $this->subtotal;
         }
     }
@@ -228,9 +256,9 @@ class PuntoVenta extends Component
             $this->condicion_operacion = (string) $this->condicion_operacion;
         }
         $rules = [
-            'tipo_documento'      => 'required|string|size:2|in:01,03,11,05,06',
+            'tipo_documento' => 'required|string|size:2|in:01,03,TL',
             'condicion_operacion' => 'required|string|in:1,2',
-            'detalles'            => 'required|array|min:1',
+            'detalles' => 'required|array|min:1',
             'detalles.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->where('activo', true)],
             'detalles.*.cantidad' => 'required|numeric|min:0.01|max:999999.9999|decimal:0,4',
             'detalles.*.precio_unitario' => 'required|numeric|min:0|max:9999999999.99|decimal:0,2',
@@ -240,22 +268,22 @@ class PuntoVenta extends Component
         ] + ReglasFormulario::fiador();
 
         $messages = [
-            'detalles.required'      => 'Debe agregar al menos un producto a la factura.',
-            'detalles.min'           => 'Debe agregar al menos un producto a la factura.',
+            'detalles.required' => 'Debe agregar al menos un producto a la factura.',
+            'detalles.min' => 'Debe agregar al menos un producto a la factura.',
             'cliente_id.required_if' => 'El cliente es obligatorio para Créditos Fiscales (CCF) y Ventas al Crédito.',
         ];
 
         if ($this->condicion_operacion === '2') {
             // Comprobar autorización para crear créditos si es venta al crédito
-            Gate::authorize('create', \App\Models\Credito::class);
+            Gate::authorize('create', Credito::class);
 
             $rules['condicion_credito_id'] = 'required|exists:condiciones_credito,id';
-            $rules['numero_cuotas']        = 'required|integer|min:1|max:120';
-            $rules['fecha_primera_cuota']  = 'required|date_format:Y-m-d|after_or_equal:today';
+            $rules['numero_cuotas'] = 'required|integer|min:1|max:120';
+            $rules['fecha_primera_cuota'] = 'required|date_format:Y-m-d|after_or_equal:today';
 
             $messages['condicion_credito_id.required'] = 'Seleccione una condición de crédito para la venta al crédito.';
-            $messages['numero_cuotas.required']        = 'Indique el número de cuotas para el crédito.';
-            $messages['fecha_primera_cuota.required']  = 'Indique la fecha de la primera cuota.';
+            $messages['numero_cuotas.required'] = 'Indique el número de cuotas para el crédito.';
+            $messages['fecha_primera_cuota.required'] = 'Indique la fecha de la primera cuota.';
             $messages['fecha_primera_cuota.after_or_equal'] = 'La fecha de la primera cuota debe ser hoy o una fecha futura.';
         }
 
@@ -263,19 +291,22 @@ class PuntoVenta extends Component
 
         if ($this->condicion_operacion === '2') {
             $condicion = CondicionCredito::find($this->condicion_credito_id);
-            if (!$condicion || !$condicion->activa) {
+            if (! $condicion || ! $condicion->activa) {
                 $this->addError('condicion_credito_id', 'La condición seleccionada está inactiva y no admite nuevos créditos.');
+
                 return;
             }
 
             if ((int) $this->numero_cuotas > $condicion->plazo_maximo_cuotas) {
                 $this->addError('numero_cuotas', "El número de cuotas supera el máximo permitido ({$condicion->plazo_maximo_cuotas}) para la condición elegida.");
+
                 return;
             }
 
             $cliente = Cliente::find($this->cliente_id);
-            if (!$cliente || !$cliente->activo) {
+            if (! $cliente || ! $cliente->activo) {
                 $this->addError('cliente_id', 'El cliente seleccionado no se encuentra activo o habilitado para crédito.');
+
                 return;
             }
         }
@@ -287,29 +318,29 @@ class PuntoVenta extends Component
             $condicionesCredito = [];
             if ($this->condicion_operacion === '2') {
                 $condicionesCredito = [
-                    'condicion_credito_id'  => $this->condicion_credito_id,
-                    'numero_cuotas'         => (int) $this->numero_cuotas,
-                    'fecha_primera_cuota'   => $this->fecha_primera_cuota,
-                    'dui_verificado'        => (bool) $this->dui_verificado,
+                    'condicion_credito_id' => $this->condicion_credito_id,
+                    'numero_cuotas' => (int) $this->numero_cuotas,
+                    'fecha_primera_cuota' => $this->fecha_primera_cuota,
+                    'dui_verificado' => (bool) $this->dui_verificado,
                     'referencia_verificada' => (bool) $this->referencia_verificada,
                 ];
 
-                if (!empty($this->fiador_nombre)) {
+                if (! empty($this->fiador_nombre)) {
                     $condicionesCredito['fiador'] = [
-                        'nombre'    => $this->fiador_nombre,
-                        'dui'       => $this->fiador_dui,
-                        'telefono'  => $this->fiador_telefono,
+                        'nombre' => $this->fiador_nombre,
+                        'dui' => $this->fiador_dui,
+                        'telefono' => $this->fiador_telefono,
                         'direccion' => $this->fiador_direccion,
                     ];
                 }
             }
-            
+
             $datosVenta = [
-                'cliente_id'          => $this->cliente_id ?: null,
-                'vendedor_id'         => $this->vendedor_id,
-                'tipo_documento'      => $this->tipo_documento,
+                'cliente_id' => $this->cliente_id ?: null,
+                'vendedor_id' => $this->vendedor_id,
+                'tipo_documento' => $this->tipo_documento,
                 'condicion_operacion' => $this->condicion_operacion,
-                'bodega_id'           => $this->bodega_id ?: 1,
+                'bodega_id' => $this->bodega_id ?: 1,
                 'condiciones_credito' => $condicionesCredito,
             ];
 
@@ -320,17 +351,17 @@ class PuntoVenta extends Component
 
             $msg = "Venta {$venta->numero_control} registrada. Estado del documento: ".strtoupper($venta->estado_dte).'.';
             if ($venta->credito) {
-                $msg .= " Crédito asociado: {$venta->credito->numero} (" . strtoupper($venta->credito->estado) . ").";
+                $msg .= " Crédito asociado: {$venta->credito->numero} (".strtoupper($venta->credito->estado).').';
             }
 
             session()->flash('success', $msg);
-            
+
             return redirect()->route('facturacion.pdf', $venta->id);
-            
+
         } catch (ValidationException $e) {
             throw $e;
         } catch (Exception $e) {
-            session()->flash('error', 'Error al procesar la venta: ' . $e->getMessage());
+            session()->flash('error', 'Error al procesar la venta: '.$e->getMessage());
         }
     }
 
@@ -352,7 +383,7 @@ class PuntoVenta extends Component
             'docsTransmitidos' => $docsTransmitidos,
             'docsLocales' => $docsLocales,
             'clienteSeleccionado' => $clienteSeleccionado,
-            'vendedores' => \App\Models\Vendedor::activos()->orderBy('nombre')->get(),
+            'vendedores' => Vendedor::activos()->orderBy('nombre')->get(),
             'condiciones' => $this->condicionesCredito,
             'condicionSeleccionada' => $this->condicionSeleccionada,
         ])->layout('layouts.app', ['title' => 'Punto de Venta DTE']);

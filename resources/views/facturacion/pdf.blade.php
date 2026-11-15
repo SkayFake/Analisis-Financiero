@@ -18,7 +18,7 @@
         .footer { clear: both; text-align: center; margin-top: 40px; font-size: 10px; color: #555; }
         
         /* Modificadores para Ticket */
-        @if(in_array($venta->tipo_documento, ['11']))
+        @if(in_array($venta->tipo_documento, ['TL']))
         body { width: 80mm; padding: 0; margin: 0 auto; font-family: monospace; font-size: 10px; }
         .items-table th, .items-table td { border: none; border-bottom: 1px dashed #ccc; padding: 2px 0; }
         .totals { width: 100%; }
@@ -34,7 +34,7 @@
     @endif
 
     <div class="header">
-        <h1>Mi Empresa S.A. de C.V.</h1>
+        <h1>{{ config('app.name') }}</h1>
         <p>
             @if($venta->tipo_documento == '01') FACTURA DE CONSUMIDOR FINAL 
             @elseif($venta->tipo_documento == '03') COMPROBANTE DE CRÉDITO FISCAL
