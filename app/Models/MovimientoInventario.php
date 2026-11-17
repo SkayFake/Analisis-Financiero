@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CorrelativoService;
 use Illuminate\Database\Eloquent\Model;
 
 class MovimientoInventario extends Model
@@ -46,7 +47,7 @@ class MovimientoInventario extends Model
 
     public static function generarNumeroDocumento($tipo)
     {
-        $prefijo = match($tipo) {
+        $prefijo = match ($tipo) {
             'entrada' => 'ENT',
             'salida' => 'SAL',
             'transferencia' => 'TRA',
@@ -54,9 +55,9 @@ class MovimientoInventario extends Model
             default => 'MOV'
         };
 
-        $ultimo = self::where('tipo', $tipo)->orderByDesc('id')->first();
-        $numero = $ultimo ? (intval(substr($ultimo->numero_documento, 4)) + 1) : 1;
+        $max = (int) static::where('tipo', $tipo)->selectRaw("COALESCE(MAX(CAST(SUBSTRING(numero_documento FROM '[0-9]+$') AS BIGINT)),0) AS n")->value('n');
+        $numero = app(CorrelativoService::class)->siguiente('inventario:'.$tipo, $max);
 
-        return $prefijo . '-' . str_pad($numero, 6, '0', STR_PAD_LEFT);
+        return $prefijo.'-'.str_pad($numero, 6, '0', STR_PAD_LEFT);
     }
 }

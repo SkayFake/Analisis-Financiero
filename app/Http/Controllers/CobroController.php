@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MetricasCobroService;
 use App\Services\IncobrableService;
-use Illuminate\Http\Request;
+use App\Services\MetricasCobroService;
+use App\Support\Acceso;
 
 class CobroController extends Controller
 {
     public function dashboard(MetricasCobroService $metricasService)
     {
+        Acceso::exigir('cobros.view');
         $metricas = $metricasService->dashboardMetricas();
         $morosidad = $metricasService->analisisMorosidad();
         $rendimiento = $metricasService->rendimientoPorVendedor(
@@ -22,6 +23,7 @@ class CobroController extends Controller
 
     public function reclasificacionMasiva(IncobrableService $incobrableService)
     {
+        Acceso::exigir('cobros.manage');
         $resultado = $incobrableService->reclasificacionMasiva(auth()->id());
 
         return redirect()->back()

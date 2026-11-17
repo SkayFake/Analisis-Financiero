@@ -97,6 +97,7 @@
     </style>
 </head>
 <body>
+    @if(config('erp.modo_academico'))<p role="note">Proyecto universitario — datos ficticios, sin validez fiscal.</p>@endif
     <div class="login-wrap">
         <main class="login-card">
             <div class="login-logo-wrap">

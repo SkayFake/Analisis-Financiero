@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Cartera;
 use App\Models\Cliente;
 use App\Models\ClienteJuridico;
 use App\Rules\DuiSalvador;
@@ -19,7 +20,8 @@ class ClienteRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user() && ($this->user()->hasRole('super-admin')
+            || $this->user()->can($this->route('cliente') ? 'clientes.edit' : 'clientes.create'));
     }
 
     protected function prepareForValidation(): void
@@ -98,11 +100,15 @@ class ClienteRequest extends FormRequest
             $cliente = $this->route('cliente');
             $cambiaVendedor = $cliente instanceof Cliente && $this->exists('vendedor_id')
                 && (int) $this->input('vendedor_id') !== (int) $cliente->vendedor_id;
-            if ($cambiaVendedor && !$this->filled('motivo_asignacion')) $validator->errors()->add('motivo_asignacion', 'Indique el motivo de la reasignación del cliente.');
-            if (($cambiaVendedor || !$cliente || ($this->exists('cartera_id') && (int) $this->cartera_id !== (int) $cliente->cartera_id)) && $this->filled('cartera_id') && !$validator->errors()->hasAny(['cartera_id', 'vendedor_id'])) {
+            if ($cambiaVendedor && ! $this->filled('motivo_asignacion')) {
+                $validator->errors()->add('motivo_asignacion', 'Indique el motivo de la reasignación del cliente.');
+            }
+            if (($cambiaVendedor || ! $cliente || ($this->exists('cartera_id') && (int) $this->cartera_id !== (int) $cliente->cartera_id)) && $this->filled('cartera_id') && ! $validator->errors()->hasAny(['cartera_id', 'vendedor_id'])) {
                 $responsable = $this->exists('vendedor_id') ? $this->input('vendedor_id') : $cliente?->vendedor_id;
-                $cartera = \App\Models\Cartera::find($this->input('cartera_id'));
-                if ($cartera?->vendedor_id && (int) $cartera->vendedor_id !== (int) $responsable) $validator->errors()->add('cartera_id', 'La cartera debe corresponder al asesor seleccionado.');
+                $cartera = Cartera::find($this->input('cartera_id'));
+                if ($cartera?->vendedor_id && (int) $cartera->vendedor_id !== (int) $responsable) {
+                    $validator->errors()->add('cartera_id', 'La cartera debe corresponder al asesor seleccionado.');
+                }
             }
             foreach (['dui', 'nit'] as $campo) {
                 $valor = $this->input($campo);

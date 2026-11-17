@@ -68,7 +68,7 @@ class ExpedientesTest extends TestCase
         $cliente ??= $this->cliente;
         $condicion = CondicionCredito::create(['nombre' => 'Condición expediente', 'activa' => true, 'requiere_dui' => true, 'requiere_fiador' => $fiador,
             'frecuencia_pago' => 'mensual', 'plazo_maximo_cuotas' => 12, 'compras_minimas_cliente_frecuente' => 0, 'monto_auto_aprobado' => 10000, 'tasa_interes_anual' => 0]);
-        $venta = Venta::create(['cliente_id' => $cliente->id, 'codigo_generacion' => Str::uuid(), 'numero_control' => 'DOC-'.Str::random(12), 'tipo_documento' => '11',
+        $venta = Venta::create(['cliente_id' => $cliente->id, 'codigo_generacion' => Str::uuid(), 'numero_control' => 'DOC-'.Str::random(12), 'tipo_documento' => 'TL',
             'estado_dte' => 'local', 'fecha_emision' => today(), 'hora_emision' => '12:00:00', 'condicion_operacion' => '2', 'total_pagar' => 300]);
 
         return app(CreditoService::class)->crearCreditoDesdeVenta($venta, array_merge(['condicion_credito_id' => $condicion->id, 'numero_cuotas' => 3,
@@ -373,6 +373,7 @@ class ExpedientesTest extends TestCase
         $credito = $this->credito();
         $d = $this->documento();
         $this->get(route('expedientes.credito', $credito))->assertOk()->assertSee('Control previo a aprobación')->assertSee('Pendiente')->assertDontSee($d->ruta);
+        $this->admin->givePermissionTo(Permission::firstOrCreate(['name' => 'clientes.view', 'guard_name' => 'web']));
         $this->get(route('clientes.show', $this->cliente))->assertOk()->assertSee('Expediente documental');
         $this->get(route('creditos.show', $credito))->assertOk()->assertSee('Expediente documental');
     }

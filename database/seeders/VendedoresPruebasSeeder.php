@@ -61,7 +61,7 @@ class VendedoresPruebasSeeder extends Seeder
                 $cliente = Cliente::where('codigo', 'QA-CONTADO')->firstOrFail();
                 $emitir = function ($credito = false, $caso = 'VENDEDOR-REASIGNADO') use ($vendedor, $producto, $bodega, $cliente, $admin) {
                     return app(FacturacionService::class)->procesarVenta([
-                        'cliente_id' => $cliente->id, 'vendedor_id' => $vendedor->id, 'bodega_id' => $bodega, 'tipo_documento' => '11',
+                        'cliente_id' => $cliente->id, 'vendedor_id' => $vendedor->id, 'bodega_id' => $bodega, 'tipo_documento' => 'TL',
                         'condicion_operacion' => $credito ? '2' : '1',
                         'condiciones_credito' => $credito ? ['condicion_credito_id' => CondicionCredito::where('nombre', 'QA SIN-INTERES')->firstOrFail()->id, 'numero_cuotas' => 3, 'fecha_primera_cuota' => today()->addMonthNoOverflow()->toDateString(), 'observaciones' => 'QA-'.$caso.' | Escenario de control comercial.'] : [],
                     ], [['producto_id' => $producto->id, 'cantidad' => 1, 'precio_unitario' => $credito ? 600 : 1000]], $admin->id);

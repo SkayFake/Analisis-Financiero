@@ -1,3 +1,11 @@
+## Proyecto universitario
+
+Usa exclusivamente datos ficticios. `ERP_MODO_ACADEMICO=true` habilita límites didácticos y documentos locales sin servicios de Hacienda. El JSON académico está claramente identificado como simulación y nunca genera sellos ni firmas fiscales. Las validaciones, permisos y controles de integridad siguen activos.
+
+## Correcciones y operación
+
+Consulte [Detalle de correcciones de auditoría](docs/correcciones-auditoria-2026-11-15.md) y [Operación y cumplimiento](docs/operacion-y-cumplimiento.md). Incluyen instalación, límites pendientes, privacidad, respaldos y validaciones. El emisor DTE permanece bloqueado hasta completar su integración y autorización; los tickets internos utilizan `TL`.
+
 ## Control de vendedores
 
 Consulte [Flujo comercial y de cartera](docs/control-vendedores.md) para metas, ventas, clientes morosos, gestiones, reasignaciones e informes.

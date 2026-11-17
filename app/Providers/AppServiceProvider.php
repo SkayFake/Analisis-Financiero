@@ -2,7 +2,14 @@
 
 namespace App\Providers;
 
+use App\Livewire\ActivoFijoDashboard;
+use App\Livewire\Configuracion\CatalogosDashboard;
+use App\Livewire\InventarioDashboard;
+use App\Livewire\MovimientoInventarioModal;
+use App\Livewire\PuntoVenta;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Pagination\Paginator::defaultView('vendor.pagination.default');
+        Livewire::component('configuracion.catalogos-dashboard', CatalogosDashboard::class);
+        Livewire::component('activo-fijo-dashboard', ActivoFijoDashboard::class);
+        Livewire::component('inventario-dashboard', InventarioDashboard::class);
+        Livewire::component('movimiento-inventario-modal', MovimientoInventarioModal::class);
+        Livewire::component('punto-venta', PuntoVenta::class);
+        Paginator::defaultView('vendor.pagination.default');
     }
 }

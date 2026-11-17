@@ -75,6 +75,7 @@ class PruebasIntegralesSeeder extends Seeder
             throw new RuntimeException('PruebasIntegralesSeeder contiene datos y accesos de prueba. Ejecútelo en un entorno local o de pruebas, nunca en producción.');
         }
         $dteAnterior = config('erp.dte.enabled');
+        $limitesAnteriores = config('erp.creditos.limites_legales');
         $expedienteAnterior = config('expedientes.exigir_creditos_nuevos');
         // Los escenarios históricos conservan su aprobación; el suplemento crea sus comprobantes.
         config(['expedientes.exigir_creditos_nuevos' => false]);
@@ -88,12 +89,18 @@ class PruebasIntegralesSeeder extends Seeder
                 }
                 if (User::where('email', 'qa.admin@example.test')->exists()) {
                     $this->call(VendedoresPruebasSeeder::class);
+
                     return false;
                 }
                 $this->usuarios();
                 $this->catalogos();
                 $this->inventario();
                 $this->clientesJuridicos();
+                config(['erp.creditos.limites_legales' => array_map(fn ($c) => [
+                    'condicion_credito_id' => $c->id, 'desde' => '2000-01-01', 'hasta' => '2100-12-31',
+                    'monto_minimo' => 0, 'monto_maximo' => 999999999999, 'tasa_maxima_efectiva' => 10000,
+                    'fuente' => 'https://example.test/qa-no-es-un-tope-legal',
+                ], array_values($this->condiciones))]);
                 $this->creditos();
                 $this->activos();
                 $this->simulacionesDte();
@@ -102,7 +109,7 @@ class PruebasIntegralesSeeder extends Seeder
                 return true;
             });
         } finally {
-            config(['erp.dte.enabled' => $dteAnterior, 'expedientes.exigir_creditos_nuevos' => $expedienteAnterior]);
+            config(['erp.creditos.limites_legales' => $limitesAnteriores, 'erp.dte.enabled' => $dteAnterior, 'expedientes.exigir_creditos_nuevos' => $expedienteAnterior]);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
         $this->call(ExpedientesPruebasSeeder::class);
@@ -327,13 +334,19 @@ class PruebasIntegralesSeeder extends Seeder
         $this->cliente('NUEVO-SIN-DUI', ['dui' => null, 'nit' => null]);
     }
 
-    private function venta(Cliente $cliente, float $monto = 100, string $tipo = '11', ?array $condiciones = null): Venta
+    private function venta(Cliente $cliente, float $monto = 100, string $tipo = 'TL', ?array $condiciones = null): Venta
     {
-        return app(FacturacionService::class)->procesarVenta([
+        $venta = app(FacturacionService::class)->procesarVenta([
             'cliente_id' => $cliente->id, 'vendedor_id' => $cliente->vendedor_id,
             'bodega_id' => $this->central->id, 'tipo_documento' => $tipo,
             'condicion_operacion' => $condiciones === null ? '1' : '2', 'condiciones_credito' => $condiciones,
         ], [['producto_id' => $this->producto->id, 'cantidad' => 1, 'precio_unitario' => $monto]], $this->admin->id);
+        if ($venta->credito) {
+            $venta->credito->update(['calculo_interes' => 'historico']);
+            app(CreditoService::class)->generarPlanPago($venta->credito);
+        }
+
+        return $venta;
     }
 
     private function credito(string $caso, string $condicion = 'SIN-INTERES', int $cuotas = 6, int $antiguedad = 0, float $monto = 600, array $extras = [], ?Cliente $cliente = null): Credito
@@ -342,7 +355,7 @@ class PruebasIntegralesSeeder extends Seeder
         $fecha = today()->subDays($antiguedad)->setTime(10, 0);
 
         return Carbon::withTestNow($fecha, function () use ($cliente, $caso, $condicion, $cuotas, $monto, $extras) {
-            $venta = $this->venta($cliente, $monto, '11', array_replace([
+            $venta = $this->venta($cliente, $monto, 'TL', array_replace([
                 'condicion_credito_id' => $this->condiciones[$condicion]->id, 'numero_cuotas' => $cuotas,
                 'fecha_primera_cuota' => now()->addMonthNoOverflow()->toDateString(),
                 'cartera_id' => $cliente->cartera_id, 'politica_cobro_id' => $this->politica->id,
@@ -395,14 +408,14 @@ class PruebasIntegralesSeeder extends Seeder
         $historico->pagos()->firstOrFail()->aplicaciones()->delete();
         $parcial = $this->credito('PARCIAL-300', cuotas: 6, monto: 1129.98);
         $this->pago($parcial, 300);
-        $conInteres = $this->credito('CON-INTERES', 'INTERES', monto: 1000);
+        $conInteres = $this->credito('CON-INTERES', 'INTERES', monto: 1000, antiguedad: 90);
         $this->pago($conInteres, 100, 'transferencia');
         $this->credito('SEMANAL', 'SEMANAL', 12);
         $this->credito('QUINCENAL', 'QUINCENAL', 8);
         $this->credito('PLAZO-120', cuotas: 120, monto: 120);
         $centavos = $this->credito('REDONDEO', cuotas: 3, monto: 100);
         $this->pago($centavos, 99.99, 'tarjeta');
-        $liquidado = $this->credito('LIQUIDADO', 'INTERES');
+        $liquidado = $this->credito('LIQUIDADO', 'INTERES', antiguedad: 240);
         foreach (['efectivo', 'transferencia', 'cheque', 'tarjeta'] as $forma) {
             $this->pago($liquidado, 25, $forma);
         }
@@ -432,7 +445,7 @@ class PruebasIntegralesSeeder extends Seeder
             }
         }
         $incobrable = $this->credito('INCOBRABLE', 'INTERES', antiguedad: 260);
-        $this->pago($incobrable, 50, fecha: $incobrable->fecha_solicitud->copy()->addDays(25));
+        $this->pago($incobrable, 50, fecha: $incobrable->fecha_primera_cuota->copy());
         $this->actualizarMora($incobrable);
         $incobrables->declararIncobrable($incobrable, 'QA Gestión de cobro agotada; saldo con interés, mora y un abono anterior.', $this->admin->id);
         $reactivado = $this->credito('REACTIVADO', antiguedad: 200);
@@ -468,7 +481,7 @@ class PruebasIntegralesSeeder extends Seeder
         }
         $contado = $this->cliente('CONTADO');
         $this->venta($contado, 99.99, '01');
-        $this->venta($contado, 10, '11');
+        $this->venta($contado, 10, 'TL');
     }
 
     /** Fixtures de tablas sin un flujo de operación expuesto en la aplicación. */
@@ -528,8 +541,9 @@ class PruebasIntegralesSeeder extends Seeder
             $activos[$caso] = $service->registrarActivo([
                 'unidad_id' => $unidad->id, 'categoria_id' => $categorias[$categoria]->id, 'nombre' => 'QA Activo '.$caso,
                 'descripcion' => 'Activo sintético para pruebas de depreciación y baja.',
-                'fecha_adquisicion' => today()->startOfMonth()->subMonthsNoOverflow($meses)->addDays(9)->toDateString(),
-                'valor_adquisicion' => 1200, 'valor_residual' => 100, 'es_usado' => $aniosUso > 0,
+                'clase_fiscal' => ['EDIF' => 'edificaciones', 'MAQU' => 'maquinaria', 'VEHI' => 'vehiculos', 'OTRO' => 'otros_muebles'][$categoria],
+                'fecha_inicio_uso' => today()->startOfMonth()->subMonthsNoOverflow($meses)->addDays(9)->toDateString(), 'fecha_adquisicion' => today()->startOfMonth()->subMonthsNoOverflow($meses)->addDays(9)->toDateString(),
+                'valor_bien_nuevo' => 1200, 'valor_aduana' => 1200, 'valor_adquisicion' => 1200, 'valor_residual' => 100, 'es_usado' => $aniosUso > 0,
                 'anios_uso_previo' => $aniosUso, 'maquinaria_importada_exenta' => $caso === 'IMPORTADO',
             ]);
         }

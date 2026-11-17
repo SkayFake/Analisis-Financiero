@@ -56,15 +56,18 @@ class IncobrablesYRecibosTest extends TestCase
         ]);
         $venta = Venta::create([
             'cliente_id' => $cliente->id, 'codigo_generacion' => (string) Str::uuid(),
-            'numero_control' => 'INC-'.Str::random(12), 'tipo_documento' => '11', 'estado_dte' => 'local',
+            'numero_control' => 'INC-'.Str::random(12), 'tipo_documento' => 'TL', 'estado_dte' => 'local',
             'fecha_emision' => today()->toDateString(), 'hora_emision' => '12:00:00',
             'condicion_operacion' => '2', 'total_pagar' => 100,
         ]);
 
-        return app(CreditoService::class)->crearCreditoDesdeVenta($venta, [
+        $credito = app(CreditoService::class)->crearCreditoDesdeVenta($venta, [
             'condicion_credito_id' => $condicion->id, 'numero_cuotas' => 2,
             'fecha_primera_cuota' => today()->addMonth()->toDateString(),
         ]);
+        $credito->update(['calculo_interes' => 'historico']);
+
+        return $credito;
     }
 
     public function test_traslado_registra_motivo_responsable_y_saldos_sin_alterar_pagos_ni_cuotas(): void

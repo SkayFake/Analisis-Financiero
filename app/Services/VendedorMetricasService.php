@@ -26,7 +26,7 @@ class VendedorMetricasService
     public function ventas(Carbon $periodo): Builder
     {
         return Venta::whereBetween('fecha_emision', [$periodo->toDateString(), $periodo->copy()->endOfMonth()->toDateString()])
-            ->whereIn('tipo_documento', ['01', '03', '11'])->whereIn('estado_dte', ['local', 'procesado'])
+            ->whereIn('tipo_documento', ['01', '03', 'TL'])->whereIn('estado_dte', ['local', 'procesado'])
             ->where(fn ($q) => $q->where('condicion_operacion', '1')->orWhere(fn ($q) => $q
                 ->where('condicion_operacion', '2')->whereHas('credito', fn ($c) => $c->withTrashed()
                 ->whereIn('estado', ['vigente', 'vencido', 'incobrable', 'cancelado', 'refinanciado']))));

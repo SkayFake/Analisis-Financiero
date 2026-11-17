@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\DteConfigurationException;
 use App\Models\Venta;
 use App\Services\DteApiService;
 use Illuminate\Bus\Queueable;
@@ -17,6 +18,10 @@ class TransmitirDteContingencia implements ShouldQueue
 
     public $ventaId;
 
+    public $tries = 5;
+
+    public $backoff = 300;
+
     /**
      * Create a new job instance.
      */
@@ -30,12 +35,12 @@ class TransmitirDteContingencia implements ShouldQueue
      */
     public function handle(DteApiService $dteApiService): void
     {
-        if (!config('erp.dte.enabled')) {
+        if (! config('erp.dte.enabled')) {
             return;
         }
         $venta = Venta::find($this->ventaId);
 
-        if (!$venta || $venta->estado_dte !== 'contingencia') {
+        if (! $venta || $venta->estado_dte !== 'contingencia') {
             return;
         }
 
@@ -44,7 +49,7 @@ class TransmitirDteContingencia implements ShouldQueue
             // Asumimos que si está en contingencia, al menos fue firmado, si no, habría que firmarlo aquí.
             if ($venta->json_firmado) {
                 $respuestaMH = $dteApiService->transmitirDTE($venta->json_firmado, $venta->tipo_documento, $venta->codigo_generacion);
-                
+
                 if (isset($respuestaMH['estado']) && $respuestaMH['estado'] == 'PROCESADO') {
                     $venta->estado_dte = 'procesado';
                     $venta->sello_recepcion = $respuestaMH['selloRecibido'];
@@ -52,15 +57,18 @@ class TransmitirDteContingencia implements ShouldQueue
                     $venta->save();
                 } else {
                     // Volver a encolar o dejar en rechazado según la lógica de reintentos
-                    throw new \Exception("Rechazado por MH: " . json_encode($respuestaMH));
+                    throw new \Exception('Rechazado por MH: '.json_encode($respuestaMH));
                 }
             } else {
                 // Lógica para firmar si falló antes de firmar...
-                Log::warning("Venta {$this->ventaId} en contingencia pero sin JSON firmado.");
+                throw new DteConfigurationException('Documento histórico sin firma: requiere reconstrucción y validación fiscal; no se reenvía como DTE válido.');
             }
 
+        } catch (DteConfigurationException $e) {
+            $venta->update(['mensaje_mh' => $e->getMessage()]);
+            $this->fail($e);
         } catch (\Exception $e) {
-            Log::error("Fallo al transmitir DTE en contingencia: " . $e->getMessage());
+            Log::error('Fallo al transmitir DTE en contingencia: '.$e->getMessage());
             // Si falla, el job se puede reintentar (si se configura retries en el Queue)
             $this->release(300); // Reintentar en 5 minutos
         }

@@ -1,4 +1,5 @@
 <div>
+    <p class="page-subtitle">Los activos históricos sin fecha de inicio de uso y base fiscal verificada requieren conciliación antes de depreciarse. El cálculo procesa el último mes cerrado.</p>
     {{-- Breadcrumbs & Header --}}
     <div class="page-header">
         <div class="page-header-left">
@@ -64,10 +65,10 @@
             </div>
         </div>
 
-        {{-- Valor Neto en Libros --}}
+        {{-- Valor neto según registro fiscal --}}
         <div class="stat-card" style="--stat-color: var(--success-500); --stat-bg: var(--success-50);">
             <div class="stat-card-top">
-                <div class="stat-card-label">Valor Neto en Libros</div>
+                <div class="stat-card-label">Valor neto según registro fiscal</div>
                 <div class="stat-card-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
@@ -77,7 +78,7 @@
             </div>
             <div class="stat-card-value" style="color: var(--primary-700);">${{ number_format($valorNetoLibros, 2) }}</div>
             <div class="stat-card-change up">
-                Valor residual contable actual
+                Adquisición menos depreciación registrada
             </div>
         </div>
     </div>
@@ -264,7 +265,10 @@
 
                     {{-- Grid 2: Valores & Fechas --}}
                     <div class="grid-3">
-                        <div class="form-group">
+                        <div class="form-group"><label>Clase fiscal</label><select class="form-select" wire:model="form_clase_fiscal" required><option value="">Seleccione</option><option value="edificaciones">Edificaciones (máximo 5%)</option><option value="maquinaria">Maquinaria (máximo 20%)</option><option value="vehiculos">Vehículos (máximo 25%)</option><option value="otros_muebles">Otros muebles (máximo 50%)</option></select></div><div class="form-group"><label>Inicio de uso</label><input class="form-control" type="date" wire:model="form_fecha_inicio_uso" required></div>
+                    @if($form_es_usado)<div class="form-group"><label>Precio documentado del bien nuevo</label><input class="form-control" type="number" min="0.01" step="0.01" wire:model="form_valor_bien_nuevo"></div>@endif
+                    @if($form_maquinaria_importada)<div class="form-group"><label>Valor registrado en aduana</label><input class="form-control" type="number" min="0.01" step="0.01" wire:model="form_valor_aduana"></div>@endif
+                    <div class="form-group">
                             <label class="form-label">Fecha Adquisición <span class="required">*</span></label>
                             <input type="date"
                                    wire:model="form_fecha_adquisicion" max="{{ now()->toDateString() }}"

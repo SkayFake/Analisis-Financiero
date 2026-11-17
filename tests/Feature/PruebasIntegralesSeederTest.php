@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Spatie\Permission\Models\Role;
@@ -53,7 +54,7 @@ class PruebasIntegralesSeederTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        \Illuminate\Support\Facades\Storage::fake('expedientes');
+        Storage::fake('expedientes');
         Http::preventStrayRequests();
         Queue::fake();
     }
@@ -90,7 +91,7 @@ class PruebasIntegralesSeederTest extends TestCase
             }
         }
         foreach (Venta::with('detalles')->get() as $venta) {
-            $this->assertEquals(round($venta->detalles->sum('venta_gravada') + (float) $venta->total_iva, 2), round((float) $venta->total_pagar, 2));
+            $this->assertEquals(round($venta->detalles->sum('venta_gravada') + ($venta->tipo_documento === '03' ? (float) $venta->total_iva : 0), 2), round((float) $venta->total_pagar, 2));
             $this->assertNull($venta->sello_recepcion);
             $this->assertNull($venta->json_firmado);
             $this->assertNotSame('procesado', $venta->estado_dte);
@@ -197,7 +198,7 @@ class PruebasIntegralesSeederTest extends TestCase
         $categoria = CategoriaActivo::create(['codigo' => 'EX01', 'nombre' => 'Categoría existente', 'porcentaje_depreciacion' => 20]);
         $activo = app(ActivoFijoService::class)->registrarActivo([
             'unidad_id' => $unidad->id, 'categoria_id' => $categoria->id, 'nombre' => 'Activo existente',
-            'fecha_adquisicion' => today()->subYear()->toDateString(), 'valor_adquisicion' => 500,
+            'clase_fiscal' => 'otros_muebles', 'fecha_inicio_uso' => today()->subYear()->toDateString(), 'fecha_adquisicion' => today()->subYear()->toDateString(), 'valor_adquisicion' => 500,
         ]);
         $antes = [$existente->fresh()->getAttributes(), $configuracion->fresh()->getAttributes(), $activo->fresh()->getAttributes(), $role->fresh()->getAttributes()];
         $this->seed(PruebasIntegralesSeeder::class);
