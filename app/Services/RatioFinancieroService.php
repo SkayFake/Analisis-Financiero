@@ -14,7 +14,10 @@ class RatioFinancieroService
 
         // ─── Totales del Balance ─────────────────────────────
         $activoCorriente = array_sum($balanceGeneral['activo_corriente'] ?? []);
-        $activoNoCorriente = array_sum($balanceGeneral['activo_no_corriente'] ?? []);
+        $activosNoCorrientes = $balanceGeneral['activo_no_corriente'] ?? [];
+        $depreciacionAcumulada = $activosNoCorrientes['depreciacion_acumulada'] ?? 0;
+        unset($activosNoCorrientes['depreciacion_acumulada']);
+        $activoNoCorriente = array_sum($activosNoCorrientes) - $depreciacionAcumulada;
         $activoTotal = $activoCorriente + $activoNoCorriente;
 
         $pasivoCorriente = array_sum($balanceGeneral['pasivo_corriente'] ?? []);

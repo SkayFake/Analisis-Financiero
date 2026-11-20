@@ -28,35 +28,13 @@
     </div>
 
     {{-- Notificaciones / Alertas --}}
-    @if($errors->any())
-        <div class="alert alert-danger" role="alert">
-            <strong>Revise los datos de la venta:</strong>
-            <ul>
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <x-errores-validacion titulo="Revise los datos de la venta" />
     @if(session('error'))
-        <div class="alert alert-danger" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--danger-50); border: 1px solid var(--danger-200); color: var(--danger-700); padding: 1rem 1.25rem; border-radius: var(--radius-md);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <div><strong>Error en la operación:</strong> {{ session('error') }}</div>
-        </div>
+        <x-alerta-flash tipo="danger">{{ session('error') }}</x-alerta-flash>
     @endif
 
     @if(session('success'))
-        <div class="alert alert-success" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; background: var(--success-50); border: 1px solid var(--success-200); color: var(--success-700); padding: 1rem 1.25rem; border-radius: var(--radius-md);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <div>{{ session('success') }}</div>
-        </div>
+        <x-alerta-flash>{{ session('success') }}</x-alerta-flash>
     @endif
 
     {{-- KPIs Estadísticas del Día --}}

@@ -78,22 +78,20 @@
     {{-- Alerta de pendiente de aprobación --}}
     @if($credito->estado === 'pendiente_aprobacion')
     <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
-        <strong>⚠ Este crédito requiere aprobación manual.</strong>
-        El cliente no cumple los criterios de aprobación automática o la documentación está en revisión.
-        @if(!empty($requisitosFaltantes))
-            <div style="margin-top: 0.5rem; font-size: 0.875rem;">
-                <strong>Requisitos pendientes antes de poder aprobar:</strong>
-                <ul style="margin: 0.25rem 0 0 1.25rem; padding: 0;">
+        <div class="alerta-contenido">
+            <strong>Este crédito requiere aprobación manual.</strong>
+            <p>El cliente no cumple los criterios de aprobación automática o la documentación está en revisión.</p>
+            @if(!empty($requisitosFaltantes))
+                <p><strong>Requisitos pendientes de aprobación</strong></p>
+                <ul class="alerta-lista">
                     @foreach($requisitosFaltantes as $req)
-                        <li style="color: var(--danger-700);">{{ $req }}</li>
+                        <li>{{ $req }}</li>
                     @endforeach
                 </ul>
-            </div>
-        @else
-            <div style="margin-top: 0.25rem; font-size: 0.875rem; color: var(--success-700);">
-                ✓ Todos los requisitos documentales exigidos se encuentran cumplidos.
-            </div>
-        @endif
+            @else
+                <p>Todos los requisitos documentales exigidos se encuentran cumplidos.</p>
+            @endif
+        </div>
     </div>
     @endif
 
@@ -408,8 +406,12 @@
 
     @can('declareUncollectible', $credito)
     <div id="modalIncobrable" class="modal-overlay" style="display: none;">
-        <div class="modal"><div class="modal-header"><h3 class="modal-title">Trasladar a cuentas incobrables</h3>
-            <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalIncobrable').style.display='none'">×</button></div>
+        <div class="modal modal-formulario modal-formulario--riesgo" role="dialog" aria-labelledby="modal-incobrable-titulo">
+            <div class="modal-header">
+                <x-modal-icono tipo="aviso" />
+                <h3 class="modal-title" id="modal-incobrable-titulo">Trasladar a cuentas incobrables</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalIncobrable').style.display='none'">×</button>
+            </div>
             <form method="POST" action="{{ route('creditos.incobrable', $credito) }}">
                 @csrf
                 <div class="modal-body">
@@ -417,7 +419,10 @@
                     <label class="form-label" for="motivo-incobrable">Motivo del traslado</label>
                     <textarea class="form-textarea" id="motivo-incobrable" name="motivo" rows="4" required minlength="10" maxlength="2000">{{ old('motivo') }}</textarea>
                 </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-primary">Confirmar traslado</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modalIncobrable').style.display='none'">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar traslado</button>
+                </div>
             </form>
         </div>
     </div>
@@ -425,10 +430,11 @@
 
     {{-- Modal: Registrar Pago --}}
     <div id="modalPago" class="modal-overlay" style="display: none;">
-        <div class="modal">
+        <div class="modal modal-formulario modal-formulario--positivo" role="dialog" aria-labelledby="modal-pago-titulo">
             <div class="modal-header">
-                <h3 class="modal-title">Registrar Pago</h3>
-                <button type="button" class="modal-close" onclick="document.getElementById('modalPago').style.display='none'">
+                <x-modal-icono tipo="pago" />
+                <h3 class="modal-title" id="modal-pago-titulo">Registrar Pago</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalPago').style.display='none'">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -437,6 +443,7 @@
                 <div class="modal-body">
                     @if($credito->cuota_pendiente)
                     <div class="alert alert-info">
+                        <div class="alerta-contenido">
                         <strong>Cuota #{{ $credito->cuota_pendiente->numero_cuota }} — Sugerido:</strong>
                         ${{ number_format($credito->cuota_pendiente->saldo_por_pagar, 2) }}
                         @if((float)$credito->cuota_pendiente->mora > 0)
@@ -445,6 +452,7 @@
                                 ({{ $credito->cuota_pendiente->dias_mora }} días × {{ number_format($credito->tasa_mora_mensual, 2) }}%/mes)
                             </span>
                         @endif
+                        </div>
                     </div>
                     @endif
 
@@ -478,10 +486,11 @@
     {{-- Modal: Aprobar Crédito --}}
     @if($credito->estado === 'pendiente_aprobacion')
     <div id="modalAprobar" class="modal-overlay" style="display: none;">
-        <div class="modal">
+        <div class="modal modal-formulario modal-formulario--positivo" role="dialog" aria-labelledby="modal-aprobar-titulo">
             <div class="modal-header">
-                <h3 class="modal-title">Aprobar Crédito {{ $credito->numero }}</h3>
-                <button type="button" class="modal-close" onclick="document.getElementById('modalAprobar').style.display='none'">
+                <x-modal-icono tipo="aprobacion" />
+                <h3 class="modal-title" id="modal-aprobar-titulo">Aprobar Crédito {{ $credito->numero }}</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalAprobar').style.display='none'">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -500,17 +509,18 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="document.getElementById('modalAprobar').style.display='none'">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">✓ Confirmar Aprobación</button>
+                    <button type="submit" class="btn btn-success">Confirmar aprobación</button>
                 </div>
             </form>
         </div>
     </div>
 
     <div id="modalRechazar" class="modal-overlay" style="display: none;">
-        <div class="modal">
+        <div class="modal modal-formulario modal-formulario--riesgo" role="dialog" aria-labelledby="modal-rechazar-titulo">
             <div class="modal-header">
-                <h3 class="modal-title">Rechazar Crédito {{ $credito->numero }}</h3>
-                <button type="button" class="modal-close" onclick="document.getElementById('modalRechazar').style.display='none'">
+                <x-modal-icono tipo="rechazo" />
+                <h3 class="modal-title" id="modal-rechazar-titulo">Rechazar Crédito {{ $credito->numero }}</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar" onclick="document.getElementById('modalRechazar').style.display='none'">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
@@ -525,7 +535,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="document.getElementById('modalRechazar').style.display='none'">Cancelar</button>
-                    <button type="submit" class="btn btn-secondary" style="color: var(--danger-600);">✕ Confirmar Rechazo</button>
+                    <button type="submit" class="btn btn-danger">Confirmar rechazo</button>
                 </div>
             </form>
         </div>

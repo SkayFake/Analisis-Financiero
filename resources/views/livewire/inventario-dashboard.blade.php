@@ -41,6 +41,8 @@
 
     </div>
 
+    @livewire('movimiento-inventario-modal')
+
     {{-- KPIs Estadísticas --}}
     <div class="grid-stats">
         {{-- Valoración Total --}}
@@ -264,7 +266,5 @@
         @endif
     </div>
 
-    {{-- Modal Reactivo de Movimientos --}}
-    @livewire('movimiento-inventario-modal')
 </div>
 

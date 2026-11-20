@@ -243,24 +243,11 @@
 
                 {{-- Flash Messages --}}
                 @if(session('success'))
-                    <div class="alert alert-success animate-slideUp" x-data="{ show: true }" x-show="show"
-                         x-init="setTimeout(() => show = false, 5000)" x-transition>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
-                        </svg>
-                        <span>{{ session('success') }}</span>
-                    </div>
+                    <x-alerta-flash>{{ session('success') }}</x-alerta-flash>
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-danger animate-slideUp" x-data="{ show: true }" x-show="show"
-                         x-init="setTimeout(() => show = false, 5000)" x-transition>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/>
-                            <line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        <span>{{ session('error') }}</span>
-                    </div>
+                    <x-alerta-flash tipo="danger">{{ session('error') }}</x-alerta-flash>
                 @endif
 
                 {{ $slot }}

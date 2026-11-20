@@ -30,15 +30,16 @@
 
             {{-- Modal de Confirmación para Reclasificación --}}
             <div class="modal-overlay" x-show="modalReclasificar" x-cloak style="display: flex;" @keydown.escape.window="modalReclasificar = false">
-                <div class="modal" @click.outside="modalReclasificar = false" style="max-width: 480px;">
+                <div class="modal modal-formulario modal-formulario--aviso" role="dialog" aria-labelledby="modal-reclasificar-titulo" @click.outside="modalReclasificar = false" style="max-width: 480px;">
                     <div class="modal-header">
+                        <x-modal-icono tipo="aviso" />
                         <div>
-                            <h3 class="modal-title">Reclasificación Masiva</h3>
+                            <h3 class="modal-title" id="modal-reclasificar-titulo">Reclasificación Masiva</h3>
                             <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
                                 Ajuste automático según días de mora acumulados.
                             </p>
                         </div>
-                        <button type="button" class="modal-close" @click="modalReclasificar = false">
+                        <button type="button" class="modal-close" aria-label="Cerrar" @click="modalReclasificar = false">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
                                 <line x1="6" y1="6" x2="18" y2="18"/>

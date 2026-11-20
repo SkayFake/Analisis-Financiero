@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class InventarioService
 {
+    private const COSTO_TOTAL_MAXIMO = 9999999999.9999;
+
     private function validar(array $datos, string $tipo): void
     {
         $reglas = [
@@ -38,8 +40,14 @@ class InventarioService
     private function bloquear(array $datos)
     {
         // El producto es el bloqueo común incluso si la existencia todavía no existe.
-        $productos = Producto::whereIn('id', array_column($datos['detalles'], 'producto_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-        foreach ($productos as $producto) {
+        $ids = array_unique(array_column($datos['detalles'], 'producto_id'));
+        $productos = Producto::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        foreach ($ids as $id) {
+            $producto = $productos->get($id);
+            if (! $producto?->activo) {
+                throw ValidationException::withMessages(['producto_id' => 'Seleccione un producto activo.']);
+            }
+
             if ($producto->metodo_costeo === 'PEPS' && abs((float) $producto->stock_total - (float) DB::table('capas_inventario')->where('producto_id', $producto->id)->sum('cantidad')) > 0.00001) {
                 throw ValidationException::withMessages(['costeo' => 'Concilie las capas PEPS históricas antes de registrar entradas, salidas o transferencias.']);
             }
@@ -224,13 +232,23 @@ class InventarioService
 
     private function detalle($mov, $p, array $det, float $q, float $c): void
     {
+        $costoTotal = round($q * $c, 4);
+        if ($costoTotal > self::COSTO_TOTAL_MAXIMO) {
+            throw ValidationException::withMessages(['cantidad' => 'El costo total del detalle excede el máximo permitido.']);
+        }
+
         DetalleMovimiento::create(['movimiento_id' => $mov->id, 'producto_id' => $p->id, 'lote' => $det['lote'] ?? null,
-            'fecha_vencimiento' => $det['fecha_vencimiento'] ?? null, 'cantidad' => $q, 'costo_unitario' => $c, 'costo_total' => round($q * $c, 4)]);
+            'fecha_vencimiento' => $det['fecha_vencimiento'] ?? null, 'cantidad' => $q, 'costo_unitario' => $c, 'costo_total' => $costoTotal]);
     }
 
     private function totalizar($mov): MovimientoInventario
     {
-        $mov->update(['costo_total' => $mov->detalles()->sum('costo_total')]);
+        $costoTotal = $mov->detalles()->sum('costo_total');
+        if ($costoTotal > self::COSTO_TOTAL_MAXIMO) {
+            throw ValidationException::withMessages(['cantidad' => 'El costo total del movimiento excede el máximo permitido.']);
+        }
+
+        $mov->update(['costo_total' => $costoTotal]);
 
         return $mov;
     }

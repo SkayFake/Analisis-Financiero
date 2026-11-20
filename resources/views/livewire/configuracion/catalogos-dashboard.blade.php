@@ -1,4 +1,4 @@
-<div>
+<div x-data="{ registroPendiente: null, nombrePendiente: '' }">
     <div class="page-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h1 class="page-title">Configuración de Catálogos</h1>
@@ -9,6 +9,13 @@
             Nuevo Registro
         </button>
     </div>
+
+    @if(!$showModal)
+        <x-errores-validacion />
+    @endif
+    @if(\Livewire\Livewire::isLivewireRequest() && session('success'))
+        <x-alerta-flash wire:key="catalogo-alerta-{{ md5(session('success')) }}">{{ session('success') }}</x-alerta-flash>
+    @endif
 
     <div class="card">
         <div class="card-header" style="border-bottom: 1px solid var(--neutral-200); padding: 0.25rem 0.5rem 0;">
@@ -75,7 +82,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -108,7 +115,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -139,7 +146,7 @@
                                 </td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -166,7 +173,7 @@
                                 <td>{{ $item->abreviatura }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -197,7 +204,7 @@
                                 <td>{{ $item->dias_credito }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -224,7 +231,7 @@
                                 <td>{{ $item->nombre }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -253,7 +260,7 @@
                                 <td>{{ $item->nombre }}</td>
                                 <td class="text-right">
                                     <button wire:click="edit({{ $item->id }})" class="btn btn-sm btn-secondary">Editar</button>
-                                    <button wire:click="delete({{ $item->id }})" wire:confirm="¿Seguro de eliminar?" class="btn btn-sm btn-ghost btn-delete">Eliminar</button>
+                                    <x-catalogo-eliminar :item="$item" />
                                 </td>
                             </tr>
                             @endforeach
@@ -268,9 +275,10 @@
     {{-- MODAL DINÁMICO --}}
     @if($showModal)
     <div class="modal-overlay" wire:keydown.escape="closeModal">
-        <div class="modal" style="max-width: 500px;">
+        <div class="modal modal-formulario" role="dialog" aria-labelledby="modal-catalogo-titulo" style="max-width: 500px;">
             <div class="modal-header">
-                <h3 class="modal-title">
+                <x-modal-icono tipo="catalogo" />
+                <h3 class="modal-title" id="modal-catalogo-titulo">
                     {{ $modalMode === 'create' ? 'Nuevo' : 'Editar' }} Registro
                 </h3>
                 <button type="button" class="modal-close" wire:click="closeModal" title="Cerrar">&times;</button>
@@ -283,7 +291,7 @@
                     <div>
                         <label class="form-label">Nombre</label>
                         <input type="text" wire:model="nombre" class="form-input" required maxlength="255">
-                        @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                        @error('nombre') <span class="form-error">{{ $message }}</span> @enderror
                     </div>
 
                     {{-- Campos específicos por pestaña --}}
@@ -291,7 +299,7 @@
                         <div>
                             <label class="form-label">Dirección</label>
                             <input type="text" wire:model="direccion" class="form-input">
-                            @error('direccion') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('direccion') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
@@ -299,7 +307,7 @@
                         <div>
                             <label class="form-label">Descripción</label>
                             <input type="text" wire:model="descripcion" class="form-input">
-                            @error('descripcion') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('descripcion') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
@@ -307,7 +315,7 @@
                         <div>
                             <label class="form-label">Abreviatura (Ej: u, kg, m)</label>
                             <input type="text" wire:model="abreviatura" class="form-input" required maxlength="10">
-                            @error('abreviatura') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('abreviatura') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
@@ -332,7 +340,7 @@
                         <div>
                             <label class="form-label">Código Institucional (Ej: 2322)</label>
                             <input type="text" wire:model="codigo" class="form-input" required maxlength="4">
-                            @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('codigo') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
@@ -345,12 +353,12 @@
                                     <option value="{{ $inst->id }}">{{ $inst->nombre }}</option>
                                 @endforeach
                             </select>
-                            @error('institucion_id') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('institucion_id') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                         <div>
                             <label class="form-label">Código de Departamento (Ej: 5676)</label>
                             <input type="text" wire:model="codigo" class="form-input" required maxlength="4">
-                            @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                            @error('codigo') <span class="form-error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
@@ -373,4 +381,19 @@
         </div>
     </div>
     @endif
+
+    <dialog wire:ignore.self x-ref="confirmacion" class="modal modal-formulario modal-formulario--riesgo confirmacion-catalogo"
+            aria-labelledby="catalogo-confirmacion-titulo" aria-describedby="catalogo-confirmacion-descripcion">
+        <div class="modal-header">
+            <x-modal-icono tipo="aviso" />
+            <h3 class="modal-title" id="catalogo-confirmacion-titulo">Eliminar registro</h3>
+        </div>
+        <div class="modal-body" id="catalogo-confirmacion-descripcion">
+            <p>¿Deseas eliminar <strong x-text="nombrePendiente"></strong> del catálogo?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" autofocus @click="$refs.confirmacion.close()">Cancelar</button>
+            <button type="button" class="btn btn-danger" @click="$refs.confirmacion.close(); $wire.delete(registroPendiente)">Eliminar registro</button>
+        </div>
+    </dialog>
 </div>

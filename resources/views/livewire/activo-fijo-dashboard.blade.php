@@ -1,4 +1,10 @@
 <div>
+    @if(\Livewire\Livewire::isLivewireRequest() && session('success'))
+        <x-alerta-flash>{{ session('success') }}</x-alerta-flash>
+    @endif
+    @if(\Livewire\Livewire::isLivewireRequest() && session('error') && !$mostrarModalRegistro && !$mostrarModalBaja)
+        <x-alerta-flash tipo="danger">{{ session('error') }}</x-alerta-flash>
+    @endif
     <p class="page-subtitle">Los activos históricos sin fecha de inicio de uso y base fiscal verificada requieren conciliación antes de depreciarse. El cálculo procesa el último mes cerrado.</p>
     {{-- Breadcrumbs & Header --}}
     <div class="page-header">
@@ -203,10 +209,11 @@
          ═══════════════════════════════════════════════════════════ --}}
     @if($mostrarModalRegistro)
     <div class="modal-overlay" wire:keydown.escape="$set('mostrarModalRegistro', false)">
-        <div class="modal" style="max-width: 640px;">
+        <div class="modal modal-formulario" role="dialog" aria-labelledby="modal-activo-titulo" style="max-width: 640px;">
             <div class="modal-header">
+                <x-modal-icono tipo="activo" />
                 <div>
-                    <h3 class="modal-title">Registrar Nuevo Activo Fijo</h3>
+                    <h3 class="modal-title" id="modal-activo-titulo">Registrar Nuevo Activo Fijo</h3>
                     <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
                         Generación automática de código institucional y cálculo de depreciación LISR.
                     </p>
@@ -222,6 +229,9 @@
             <form wire:submit.prevent="registrarActivo">
                 <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
                     @include('components.errores-validacion')
+                    @if(session('error'))
+                        <x-alerta-flash tipo="danger">{{ session('error') }}</x-alerta-flash>
+                    @endif
                     
                     {{-- Grid 1: Unidad & Categoría --}}
                     <div class="grid-2">
@@ -265,7 +275,13 @@
 
                     {{-- Grid 2: Valores & Fechas --}}
                     <div class="grid-3">
-                        <div class="form-group"><label>Clase fiscal</label><select class="form-select" wire:model="form_clase_fiscal" required><option value="">Seleccione</option><option value="edificaciones">Edificaciones (máximo 5%)</option><option value="maquinaria">Maquinaria (máximo 20%)</option><option value="vehiculos">Vehículos (máximo 25%)</option><option value="otros_muebles">Otros muebles (máximo 50%)</option></select></div><div class="form-group"><label>Inicio de uso</label><input class="form-control" type="date" wire:model="form_fecha_inicio_uso" required></div>
+                        <div class="form-group"><label>Clase fiscal</label><select class="form-select" wire:model="form_clase_fiscal" required><option value="">Seleccione</option><option value="edificaciones">Edificaciones (máximo 5%)</option><option value="maquinaria">Maquinaria (máximo 20%)</option><option value="vehiculos">Vehículos (máximo 25%)</option><option value="otros_muebles">Otros muebles (máximo 50%)</option></select></div>
+                        <div class="form-group">
+                            <label class="form-label" for="activo-inicio-uso">Inicio de uso <span class="required">*</span></label>
+                            <input id="activo-inicio-uso" class="form-input" type="date" wire:model="form_fecha_inicio_uso"
+                                   max="{{ now()->toDateString() }}" required>
+                            @error('form_fecha_inicio_uso') <span class="form-error">{{ $message }}</span> @enderror
+                        </div>
                     @if($form_es_usado)<div class="form-group"><label>Precio documentado del bien nuevo</label><input class="form-control" type="number" min="0.01" step="0.01" wire:model="form_valor_bien_nuevo"></div>@endif
                     @if($form_maquinaria_importada)<div class="form-group"><label>Valor registrado en aduana</label><input class="form-control" type="number" min="0.01" step="0.01" wire:model="form_valor_aduana"></div>@endif
                     <div class="form-group">
@@ -352,10 +368,11 @@
          ═══════════════════════════════════════════════════════════ --}}
     @if($mostrarModalBaja)
     <div class="modal-overlay" wire:keydown.escape="$set('mostrarModalBaja', false)">
-        <div class="modal" style="max-width: 480px;">
+        <div class="modal modal-formulario modal-formulario--riesgo" role="dialog" aria-labelledby="modal-baja-titulo" style="max-width: 480px;">
             <div class="modal-header">
+                <x-modal-icono tipo="baja" />
                 <div>
-                    <h3 class="modal-title" style="color: var(--danger-600);">Desincorporar Activo</h3>
+                    <h3 class="modal-title" id="modal-baja-titulo">Desincorporar Activo</h3>
                     <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
                         Registro legal de baja según Art. 30 LISR.
                     </p>
@@ -369,7 +386,10 @@
             </div>
 
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
-                    @include('components.errores-validacion')
+                @include('components.errores-validacion')
+                @if(session('error'))
+                    <x-alerta-flash tipo="danger">{{ session('error') }}</x-alerta-flash>
+                @endif
                 <div class="alert alert-warning" style="margin-bottom: 0.5rem;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>

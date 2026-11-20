@@ -1,4 +1,7 @@
 <div>
+    @if(\Livewire\Livewire::isLivewireRequest() && session('success'))
+        <x-alerta-flash>{{ session('success') }}</x-alerta-flash>
+    @endif
     <div class="page-header">
         <div><h1 class="page-title">Control de vendedores</h1><p class="page-subtitle">Ventas, metas mensuales y responsabilidad de cobro en una misma ficha.</p></div>
         <div class="page-actions">
@@ -54,9 +57,10 @@
     <p style="margin-top:1rem;">Las ventas del mes corresponden a documentos comerciales válidos sin IVA. Los cobros son recibos de créditos atribuidos al responsable al recibirlos. La cartera corresponde a {{ now()->format('d/m/Y H:i') }}, aunque consulte un mes anterior. Los indicadores incluyen vendedores inactivos cuando coinciden con los filtros.</p>
     @if($showModal)
     <div class="modal-overlay" wire:keydown.escape="closeModal">
-        <div class="modal" style="max-width: 500px;">
+        <div class="modal modal-formulario" role="dialog" aria-labelledby="modal-vendedor-titulo" style="max-width: 500px;">
             <div class="modal-header">
-                <h3 class="modal-title">{{ $modalMode === 'create' ? 'Nuevo Vendedor' : 'Editar Vendedor' }}</h3>
+                <x-modal-icono tipo="vendedor" />
+                <h3 class="modal-title" id="modal-vendedor-titulo">{{ $modalMode === 'create' ? 'Nuevo Vendedor' : 'Editar Vendedor' }}</h3>
                 <button type="button" class="modal-close" wire:click="closeModal" title="Cerrar" aria-label="Cerrar">&times;</button>
             </div>
             <form wire:submit.prevent="save">
@@ -65,12 +69,12 @@
                     <div>
                         <label class="form-label">Código</label>
                         <input type="text" wire:model="codigo" class="form-input" required maxlength="20">
-                        @error('codigo') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                        @error('codigo') <span class="form-error">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label class="form-label">Nombre Completo</label>
                         <input type="text" wire:model="nombre" class="form-input" required maxlength="255">
-                        @error('nombre') <span class="text-danger text-sm">{{ $message }}</span> @enderror
+                        @error('nombre') <span class="form-error">{{ $message }}</span> @enderror
                     </div>
                     <div class="compact-form-grid">
                         <div>

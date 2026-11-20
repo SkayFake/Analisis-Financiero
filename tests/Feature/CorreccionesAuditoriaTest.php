@@ -26,6 +26,7 @@ use App\Services\FacturacionService;
 use App\Services\FirmadorService;
 use App\Services\InventarioService;
 use App\Services\LimiteCreditoService;
+use App\Services\RatioFinancieroService;
 use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,6 +77,65 @@ class CorreccionesAuditoriaTest extends TestCase
         $componente = Livewire::test(CatalogosDashboard::class);
         $u->revokePermissionTo($permiso);
         $componente->call('save')->assertForbidden();
+    }
+
+    public function test_inventario_no_mueve_productos_inactivos(): void
+    {
+        [$bodega, $producto, $usuario] = $this->stock('PROMEDIO');
+        $destino = Bodega::create(['nombre' => 'Destino', 'activa' => true]);
+        $servicio = app(InventarioService::class);
+        $datos = ['bodega_id' => $bodega->id, 'bodega_origen_id' => $bodega->id,
+            'bodega_destino_id' => $destino->id,
+            'detalles' => [['producto_id' => $producto->id, 'cantidad' => 1, 'costo_unitario' => 10]]];
+        $servicio->registrarEntrada($datos, $usuario->id);
+        $producto->update(['activo' => false]);
+
+        foreach (['registrarEntrada', 'registrarSalida', 'transferirBodega'] as $operacion) {
+            try {
+                $servicio->{$operacion}($datos, $usuario->id);
+                $this->fail("Se aceptó {$operacion} para un producto inactivo.");
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('producto_id', $e->errors());
+            }
+        }
+
+        $this->assertEquals(1, $producto->fresh()->stock_total);
+        $this->assertDatabaseCount('movimientos_inventario', 1);
+    }
+
+    public function test_inventario_rechaza_costos_fuera_de_rango_y_revierte_el_movimiento(): void
+    {
+        [$bodega, $producto, $usuario] = $this->stock('PROMEDIO');
+        $servicio = app(InventarioService::class);
+        $detalle = ['producto_id' => $producto->id, 'cantidad' => 100, 'costo_unitario' => 60000000];
+
+        foreach ([[
+            array_replace($detalle, ['cantidad' => 200]),
+        ], [$detalle, $detalle]] as $detalles) {
+            try {
+                $servicio->registrarEntrada(['bodega_id' => $bodega->id, 'detalles' => $detalles], $usuario->id);
+                $this->fail('Se aceptó un importe fuera de rango.');
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('cantidad', $e->errors());
+            }
+
+            $this->assertDatabaseCount('movimientos_inventario', 0);
+            $this->assertDatabaseCount('detalle_movimientos', 0);
+            $this->assertDatabaseCount('existencias', 0);
+        }
+    }
+
+    public function test_ratios_descontan_depreciacion_acumulada_del_activo(): void
+    {
+        $ratios = app(RatioFinancieroService::class)->calcular([
+            'activo_no_corriente' => ['propiedad_planta_equipo' => 1000, 'depreciacion_acumulada' => 200],
+            'pasivo_corriente' => ['cuentas_por_pagar' => 400],
+            'patrimonio' => ['capital_social' => 400],
+        ], ['ingresos_operacionales' => 80]);
+
+        $this->assertSame(800.0, $ratios['resumen']['activo_total']);
+        $this->assertSame(0.5, $ratios['endeudamiento']['deuda_activo']);
+        $this->assertSame(10.0, $ratios['rentabilidad']['roa']);
     }
 
     public function test_peps_conserva_costos_y_antiguedad_al_transferir_y_vender(): void
