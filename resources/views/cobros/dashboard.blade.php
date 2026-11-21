@@ -8,6 +8,20 @@
             <p class="page-subtitle">Monitoreo de morosidad, metas de cobranza y reclasificación de riesgo crediticio.</p>
         </div>
         <div class="page-actions" x-data="{ modalReclasificar: false }">
+            <a href="{{ route('cobros.secuencia') }}" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+                <span>Secuencia de Cobranza</span>
+            </a>
+
+            <a href="{{ route('cobros.notificaciones') }}" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span>Notificaciones y Respuestas</span>
+            </a>
+
             @can('viewIncobrables', \App\Models\Credito::class)
                 <a href="{{ route('incobrables.index') }}" class="btn btn-secondary">Cartera de incobrables</a>
             @endcan
@@ -150,6 +164,106 @@
         </div>
     </div>
     @endif
+
+    {{-- Plan de Secuencia de Cobranza (Oficial de la Clase) --}}
+    @if(isset($tableroSecuencia))
+    <div class="card mb-4" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 class="card-title">Secuencia de Cobranza Institucional</h3>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                    Seguimiento escalonado: Notificación escrita → Llamada → Visita → Agencia de cobranza → Recurso legal.
+                </p>
+            </div>
+            <a href="{{ route('cobros.secuencia') }}" class="btn btn-secondary" style="font-size: 0.8125rem;">
+                Ver Tablero Completo →
+            </a>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                @foreach($tableroSecuencia as $key => $sec)
+                <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-top: 3px solid var(--{{ $sec['info']['badge'] }}-500); border-radius: var(--radius-md); padding: 1rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--neutral-500); text-transform: uppercase;">
+                        Etapa {{ $sec['info']['orden'] }} ({{ $sec['info']['dias_mora_sugeridos'] }})
+                    </div>
+                    <div style="font-weight: 700; color: var(--neutral-900); font-size: 0.9375rem; margin-top: 0.25rem;">
+                        {{ $sec['info']['nombre'] }}
+                    </div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-700); margin-top: 0.5rem;">
+                        {{ $sec['total_creditos'] }} <span style="font-size: 0.75rem; font-weight: 500; color: var(--neutral-500);">créditos</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: 0.25rem;">
+                        Saldo: ${{ number_format($sec['saldo_total'], 2) }}
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Las Cuatro Variables de la Política de Crédito --}}
+    <div class="card mb-4" style="margin-bottom: 1.5rem; background: #fafafa; border: 1px solid var(--neutral-200);">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Las Cuatro Variables de la Política de Crédito</h3>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                    Estructura fundamental aplicada en las operaciones de otorgamiento y cobranza.
+                </p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem;">
+                <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-weight: 700; color: var(--primary-800); font-size: 0.9375rem; margin-bottom: 0.25rem;">
+                        1. Período de Crédito
+                    </div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                        ¿Cuánto tiempo tiene el cliente para pagar?
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                        Plazos estandarizados en 30, 60 y 90 días, con amortizaciones semanales, quincenales o mensuales configurables por condición.
+                    </div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-weight: 700; color: var(--primary-800); font-size: 0.9375rem; margin-bottom: 0.25rem;">
+                        2. Normas de Crédito
+                    </div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                        ¿A quién se le concede y con qué límite?
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                        Evaluación rigurosa de las 5 C, expediente documental, verificación de DUI, fiador solidario y monto máximo de auto-aprobación para clientes frecuentes.
+                    </div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-weight: 700; color: var(--primary-800); font-size: 0.9375rem; margin-bottom: 0.25rem;">
+                        3. Política de Cobranza
+                    </div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                        ¿Cómo se da seguimiento y ante la mora?
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                        Días de gracia (3-5 días), cálculo de interés moratorio, y ejecución de la secuencia oficial: Notificación escrita → Llamada → Visita → Agencia → Recurso legal.
+                    </div>
+                </div>
+
+                <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-weight: 700; color: var(--primary-800); font-size: 0.9375rem; margin-bottom: 0.25rem;">
+                        4. Descuento por Pronto Pago
+                    </div>
+                    <div style="font-size: 0.8125rem; font-weight: 600; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                        ¿Qué rebaja y hasta qué día se aprovecha?
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                        <strong>Ejemplo 2/10, neto 30:</strong> 2% de descuento si se cancela dentro de los 10 días iniciales. Si vence al día 30, paga el 100%. Acelera liquidez y reduce incobrables.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- Matriz de Clasificación de Cartera --}}
     <div class="card mb-4" style="margin-bottom: 1.5rem;">

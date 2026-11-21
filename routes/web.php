@@ -54,6 +54,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/creditos/{credito}/fiadores/{fiador}', [ExpedienteController::class, 'fiador'])->name('expedientes.fiador.actualizar');
 
     // Clientes
+    Route::get('/clientes/{cliente}/auxiliar', [ClienteController::class, 'auxiliar'])->name('clientes.auxiliar');
     Route::resource('clientes', ClienteController::class);
 
     // Activo Fijo
@@ -99,6 +100,11 @@ Route::middleware(['auth'])->group(function () {
     // Cobros
     Route::get('/cobros', [CobroController::class, 'dashboard'])->name('cobros.dashboard');
     Route::post('/cobros/reclasificacion-masiva', [CobroController::class, 'reclasificacionMasiva'])->name('cobros.reclasificacion');
+    Route::get('/cobros/secuencia', [CobroController::class, 'secuencia'])->name('cobros.secuencia');
+    Route::post('/cobros/secuencia/{credito}/escalar', [CobroController::class, 'escalarSecuencia'])->name('cobros.secuencia.escalar');
+    Route::get('/cobros/notificaciones', [CobroController::class, 'notificaciones'])->name('cobros.notificaciones');
+    Route::post('/cobros/notificaciones', [CobroController::class, 'enviarNotificacion'])->name('cobros.notificaciones.enviar');
+    Route::post('/cobros/notificaciones/{notificacion}/respuesta', [CobroController::class, 'actualizarRespuesta'])->name('cobros.notificaciones.respuesta');
 
     // Configuraciones Generales
     Route::get('/configuracion/catalogos', CatalogosDashboard::class)->name('configuracion.catalogos');

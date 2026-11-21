@@ -60,6 +60,16 @@ class Cliente extends Model
         return $this->hasMany(HistorialClasificacion::class);
     }
 
+    public function notificacionesCobro()
+    {
+        return $this->hasMany(CobranzaNotificacion::class)->orderByDesc('fecha_envio');
+    }
+
+    public function secuenciasCobranza()
+    {
+        return $this->hasMany(CobranzaSecuencia::class);
+    }
+
     // ─── Scopes ──────────────────────────────────────────────────
 
     public function scopeNaturales($query)
@@ -140,5 +150,81 @@ class Cliente extends Model
         }
 
         return sprintf('%s-%06d', $prefijo, $numero);
+    }
+
+    /**
+     * Auxiliar contable de ventas y pagos por cliente.
+     * Registra cronológicamente ventas al crédito, cuotas, intereses y pagos con saldo acumulado.
+     */
+    public function obtenerAuxiliar(): \Illuminate\Support\Collection
+    {
+        $movimientos = collect();
+
+        // 1. Créditos / Ventas a crédito (Cargos)
+        $creditos = $this->creditos()->with(['venta', 'condicionCredito'])->get();
+        foreach ($creditos as $c) {
+            $fecha = $c->fecha_solicitud ?? $c->created_at->toDateString();
+            $movimientos->push([
+                'fecha' => $fecha,
+                'tipo' => 'VENTA_CREDITO',
+                'concepto' => "Venta al crédito {$c->numero}" . ($c->venta ? " (Factura {$c->venta->numero_control})" : ''),
+                'referencia' => $c->numero,
+                'cargo' => (float) $c->monto_original,
+                'abono' => 0.00,
+                'credito_id' => $c->id,
+                'created_at' => $c->created_at,
+            ]);
+
+            // Intereses pactados/devengados si aplican
+            if ((float) $c->interes_acumulado > 0) {
+                $movimientos->push([
+                    'fecha' => $fecha,
+                    'tipo' => 'INTERES_CARGO',
+                    'concepto' => "Intereses pactados crédito {$c->numero}",
+                    'referencia' => $c->numero,
+                    'cargo' => (float) $c->interes_acumulado,
+                    'abono' => 0.00,
+                    'credito_id' => $c->id,
+                    'created_at' => $c->created_at->copy()->addSecond(),
+                ]);
+            }
+        }
+
+        // 2. Pagos recibidos (Abonos)
+        $pagos = Pago::whereIn('credito_id', $creditos->pluck('id'))
+            ->with('credito')
+            ->orderBy('fecha_pago')
+            ->get();
+
+        foreach ($pagos as $p) {
+            $movimientos->push([
+                'fecha' => $p->fecha_pago->toDateString(),
+                'tipo' => 'PAGO_RECIBO',
+                'concepto' => "Abono a crédito {$p->credito?->numero} (Recibo {$p->numero_recibo})",
+                'referencia' => $p->numero_recibo,
+                'cargo' => 0.00,
+                'abono' => (float) $p->monto_total,
+                'detalle' => [
+                    'capital' => (float) $p->abono_capital,
+                    'interes' => (float) $p->pago_interes,
+                    'mora' => (float) $p->pago_mora,
+                ],
+                'credito_id' => $p->credito_id,
+                'created_at' => $p->created_at,
+            ]);
+        }
+
+        // Ordenar cronológicamente y calcular saldo progresivo
+        $ordenados = $movimientos->sortBy([
+            ['fecha', 'asc'],
+            ['created_at', 'asc'],
+        ])->values();
+
+        $saldoAcumulado = 0.0;
+        return $ordenados->map(function ($item) use (&$saldoAcumulado) {
+            $saldoAcumulado = round($saldoAcumulado + $item['cargo'] - $item['abono'], 2);
+            $item['saldo_acumulado'] = $saldoAcumulado;
+            return $item;
+        });
     }
 }

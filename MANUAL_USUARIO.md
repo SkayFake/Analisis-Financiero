@@ -114,3 +114,48 @@ Control del patrimonio de la empresa en bienes de uso.
 
 ### Nivel Gerencial
 - **Valor en Libros:** Permite conocer cuánto valen realmente los bienes de la empresa hoy, restando la depreciación acumulada. Este dato es vital para los estados financieros formales y el cálculo de impuestos sobre la renta.
+
+---
+
+## 8. Políticas de Crédito, 5 C y Plan de Secuencia de Cobranza
+
+Módulo académico y operativo alineado a las directrices de la cátedra de Análisis Financiero y Cobranza.
+
+### A. Las Cuatro Variables de la Política de Crédito
+1. **Período de crédito:** Determina cuánto tiempo tiene el cliente para pagar la factura (plazos de 30, 60 y 90 días, con frecuencias semanales, quincenales o mensuales).
+2. **Normas de crédito:** Define a quién se le concede crédito, límites de auto-aprobación y requisitos (verificación de DUI, fiador solidario y expediente documental).
+3. **Política de cobranza:** Procedimiento estandarizado de seguimiento ante mora, días de gracia (3-5 días) e interés moratorio aplicable.
+4. **Descuento por pronto pago (Regla 2/10, neto 30):**
+   - Ofrece un **2% de descuento** si el cliente cancela dentro de los primeros **10 días**.
+   - Si deja pasar el período de descuento, vence el **100% del total al día 30**.
+   - *Impacto gerencial:* Acelera la recuperación de efectivo, reduce el riesgo de incobrabilidad y estimula las ventas, a cambio de una pequeña reducción en el margen bruto de la venta.
+
+### B. Las Cinco C del Crédito (y Criterios Ampliados)
+El sistema evalúa el perfil crediticio consolidando un puntaje (0-100) y semáforo de riesgo:
+- **Carácter:** Voluntad de cumplir y comportamiento histórico de pago en la empresa.
+- **Capacidad:** Flujo de efectivo y posibilidad real de pago ($Capacidad = Ingresos - Egresos$).
+- **Capital:** Posición patrimonial y solidez financiera del cliente o empresa.
+- **Colateral:** Activos ofrecidos en garantía y fiadores solidarios verificados con DUI.
+- **Condiciones:** Entorno económico, zona geográfica y sector comercial.
+- **Criterios Ampliados:** Cobertura (seguros o fianzas), Consistencia (estabilidad en la actividad) y Categoría (clasificación A, B, C, D, E según días de mora).
+
+### C. Plan de Secuencia de Cobranza de la Clase
+El sistema implementa el flujo progresivo de 5 etapas:
+$$\text{Notificación escrita} \longrightarrow \text{Llamada telefónica} \longrightarrow \text{Visita presencial} \longrightarrow \text{Agencia de cobranza} \longrightarrow \text{Recurso legal}$$
+- **Etapa 1: Notificación escrita (1 - 15 días de atraso o preventivo):** Cartas formales, recordatorios preventivos y estados de cuenta emitidos vía correo o documento impreso.
+- **Etapa 2: Llamada telefónica (16 - 30 días de atraso):** Contacto telefónico directo para indagar motivos del atraso y gestionar promesas de pago.
+- **Etapa 3: Visita presencial (31 - 60 días de atraso):** Cobrador o gestor visita el domicilio o negocio para verificar arraigo y entregar requerimiento.
+- **Etapa 4: Agencia de cobranza (61 - 90 días de atraso):** Traslado de la cuenta a despacho externo de cobranza extrajudicial.
+- **Etapa 5: Recurso legal (Más de 90 días de atraso):** Proceso judicial ejecutivo mercantil, embargo de bienes o recuperación por vía de abogados.
+
+### D. Centro de Notificaciones y Control de Respuestas
+- **Control de Destinatarios:** Filtrado inteligente de clientes según criterio (en mora, preventivos por vencer en 7 días, o pagos realizados).
+- **Canal y Plantillas:** Emisión por Correo Electrónico (con plantilla formal HTML) o Llamadas Telefónicas (con guion sugerido).
+- **Control de Respuestas:** Registro obligatorio del resultado de la llamada o correo:
+  - *Contestó llamada / Respondió correo*
+  - *Promesa de pago (con fecha de compromiso y monto acordado)*
+  - *Solicitó prórroga*
+  - *No contestó / Buzón de voz*
+  - *Se niega a pagar*
+  - *Contacto inválido*
+- **Auxiliar por Cliente:** Vista cronológica del estado de cuenta de cada cliente con cargos (ventas al crédito), abonos (pagos y recibos) y saldo acumulado progresivo.
