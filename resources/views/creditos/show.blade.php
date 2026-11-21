@@ -238,7 +238,294 @@
     </div>
     @endif
 
-    <div class="grid-2" style="margin-top: 1.5rem;">
+    {{-- Secuencia de Cobranza de la Clase --}}
+    @if(isset($secuencia))
+    <div class="card mb-4" style="margin-top: 1.5rem; border-top: 4px solid var(--{{ $secuencia->etapa_badge }}-500);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge badge-{{ $secuencia->etapa_badge }}" style="font-weight: 800; font-size: 0.8125rem;">
+                        Etapa {{ $secuencia->etapa_info['orden'] }}: {{ $secuencia->etapa_nombre }}
+                    </span>
+                    <h3 class="card-title" style="margin: 0;">Secuencia de Cobranza del Crédito</h3>
+                </div>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.25rem;">
+                    Ingreso a esta etapa: {{ $secuencia->fecha_ingreso_etapa?->format('d/m/Y') }} • Estado de gestión: <strong>{{ strtoupper(str_replace('_', ' ', $secuencia->estado)) }}</strong>
+                </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ route('cobros.notificaciones', ['buscar' => $credito->numero, 'criterio' => 'pendientes']) }}" class="btn btn-primary" style="font-size: 0.8125rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span>Notificar / Llamar</span>
+                </a>
+                <button type="button" class="btn btn-secondary" style="font-size: 0.8125rem;" onclick="document.getElementById('modalEscalarCredito').style.display = 'flex';">
+                    <span>Escalar Etapa →</span>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {{-- Stepper visual de las 5 etapas --}}
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+                @foreach(\App\Models\CobranzaSecuencia::ETAPAS as $eKey => $eInfo)
+                    @php
+                        $esActual = $secuencia->etapa_actual === $eKey;
+                        $esPasada = $eInfo['orden'] < $secuencia->etapa_info['orden'];
+                    @endphp
+                    <div style="background: {{ $esActual ? 'var(--primary-50)' : ($esPasada ? 'var(--neutral-100)' : '#ffffff') }}; border: 1px solid {{ $esActual ? 'var(--primary-500)' : 'var(--neutral-200)' }}; border-radius: var(--radius-sm); padding: 0.6rem; text-align: center;">
+                        <div style="font-size: 0.7rem; font-weight: 700; color: {{ $esActual ? 'var(--primary-700)' : 'var(--neutral-500)' }};">
+                            {{ $esPasada ? '✓' : $eInfo['orden'].'.' }} {{ $eInfo['nombre'] }}
+                        </div>
+                        <div style="font-size: 0.65rem; color: var(--neutral-400); margin-top: 0.15rem;">
+                            {{ $eInfo['dias_mora_sugeridos'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            @if($secuencia->motivo_escalamiento)
+                <div style="font-size: 0.8125rem; color: var(--neutral-700); background: var(--neutral-50); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem;">
+                    <strong>Último motivo de escalamiento:</strong> {{ $secuencia->motivo_escalamiento }}
+                    @if($secuencia->usuarioEscalado)
+                        <span style="color: var(--neutral-500);"> — Por {{ $secuencia->usuarioEscalado->name }}</span>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Historial de Notificaciones y Respuestas de este crédito --}}
+            @if($credito->notificacionesCobro->isNotEmpty())
+                <div style="margin-top: 1rem;">
+                    <div style="font-size: 0.8125rem; font-weight: 700; color: var(--neutral-700); margin-bottom: 0.5rem;">
+                        Historial de Notificaciones y Respuestas del Cliente en este Crédito:
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        @foreach($credito->notificacionesCobro->take(5) as $n)
+                            <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; font-size: 0.8125rem;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span class="badge badge-{{ $n->canal_badge }}" style="font-size: 0.7rem;">{{ $n->canal_label }}</span>
+                                        <strong>{{ $n->asunto }}</strong>
+                                        <span style="color: var(--neutral-400); font-size: 0.75rem;">{{ $n->fecha_envio->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                    <div style="color: var(--neutral-600); font-size: 0.75rem; margin-top: 0.2rem;">
+                                        {{ $n->notas_respuesta ?? $n->mensaje }}
+                                    </div>
+                                </div>
+                                <span class="badge badge-{{ $n->estado_respuesta_badge }}" style="font-weight: 700;">
+                                    {{ $n->estado_respuesta_label }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Modal para Escalar este Crédito --}}
+    <div id="modalEscalarCredito" class="modal-overlay" style="display: none; align-items: center; justify-content: center;">
+        <div class="modal" style="max-width: 480px; width: 100%;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Escalar Secuencia de Cobranza</h3>
+                    <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                        Crédito {{ $credito->numero }} ({{ $credito->dias_mora }} días mora)
+                    </p>
+                </div>
+                <button type="button" class="modal-close" onclick="document.getElementById('modalEscalarCredito').style.display='none';">✕</button>
+            </div>
+            <form method="POST" action="{{ route('cobros.secuencia.escalar', $credito) }}">
+                @csrf
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <label class="form-label">Nueva Etapa en la Secuencia</label>
+                        <select name="etapa_destino" class="form-control" required onchange="document.getElementById('mAgencia').style.display = (this.value==='agencia_cobranza')?'block':'none'; document.getElementById('mLegal').style.display = (this.value==='recurso_legal')?'block':'none';">
+                            @foreach(\App\Models\CobranzaSecuencia::ETAPAS as $ek => $ei)
+                                <option value="{{ $ek }}" {{ $secuencia->etapa_actual === $ek ? 'selected' : '' }}>
+                                    Etapa {{ $ei['orden'] }}: {{ $ei['nombre'] }} ({{ $ei['dias_mora_sugeridos'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div id="mAgencia" style="display: none;">
+                        <label class="form-label">Nombre de la Agencia Externa</label>
+                        <input type="text" name="agencia_nombre" class="form-control" placeholder="Nombre del despacho...">
+                    </div>
+                    <div id="mLegal" style="display: none;">
+                        <label class="form-label">Referencia del Juicio / Juzgado</label>
+                        <input type="text" name="expediente_legal_referencia" class="form-control" placeholder="Referencia legal...">
+                    </div>
+                    <div>
+                        <label class="form-label">Motivo del Escalamiento</label>
+                        <textarea name="motivo" rows="3" class="form-control" required placeholder="Justificación de la decisión según política o comportamiento del cliente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('modalEscalarCredito').style.display='none';">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Escalamiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    {{-- Las Cuatro Variables de la Política de Crédito --}}
+    <div class="card mb-4" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Las Cuatro Variables de la Política de Crédito</h3>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                    Parámetros aplicados al crédito comercial {{ $credito->numero }}.
+                </p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                {{-- 1. Período de Crédito --}}
+                <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-700); text-transform: uppercase;">
+                        1. Período de Crédito
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: 0.2rem;">
+                        ¿Cuánto tiempo tiene para pagar?
+                    </div>
+                    <div style="font-size: 1.125rem; font-weight: 700; color: var(--neutral-900); margin-top: 0.5rem;">
+                        {{ $credito->plazo_dias }} días totales
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: 0.25rem;">
+                        {{ $credito->numero_cuotas }} cuotas {{ $credito->frecuencia_label }} • Vence {{ $credito->fecha_vencimiento?->format('d/m/Y') }}
+                    </div>
+                </div>
+
+                {{-- 2. Normas de Crédito --}}
+                <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-700); text-transform: uppercase;">
+                        2. Normas de Crédito
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: 0.2rem;">
+                        ¿Requisitos y límites de aprobación?
+                    </div>
+                    <div style="font-size: 0.9375rem; font-weight: 700; color: var(--neutral-900); margin-top: 0.5rem;">
+                        Límite auto-aprobado: ${{ number_format($credito->condicionCredito?->monto_auto_aprobado ?? 500, 2) }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: 0.25rem;">
+                        DUI: {{ $credito->dui_verificado ? 'Verificado ✓' : 'Pendiente' }} • Fiadores: {{ $credito->fiadores->count() }} registrados
+                    </div>
+                </div>
+
+                {{-- 3. Política de Cobranza --}}
+                <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-700); text-transform: uppercase;">
+                        3. Política de Cobranza
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: 0.2rem;">
+                        ¿Seguimiento y acciones ante mora?
+                    </div>
+                    <div style="font-size: 0.9375rem; font-weight: 700; color: var(--neutral-900); margin-top: 0.5rem;">
+                        {{ $credito->dias_gracia }} días de gracia
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-600); margin-top: 0.25rem;">
+                        Mora: {{ number_format($credito->tasa_mora_mensual, 2) }}% mensual • Escalamiento progresivo de la clase
+                    </div>
+                </div>
+
+                {{-- 4. Descuento por Pronto Pago (2/10, neto 30) --}}
+                @php
+                    $diasPP = $credito->dias_pronto_pago ?? 10;
+                    $pctPP = (float) ($credito->descuento_pronto_pago ?? 2.0);
+                    $terminoPP = $credito->termino_pago ?? "{$pctPP}/{$diasPP}, neto 30";
+                    $fechaBase = $credito->fecha_solicitud ?? $credito->created_at;
+                    $fechaLimitePP = $credito->fecha_limite_pronto_pago ?? $fechaBase->copy()->addDays($diasPP);
+                    $calificaPP = today()->lte($fechaLimitePP);
+                    $ahorroPP = round((float)$credito->monto_original * ($pctPP / 100), 2);
+                    $montoConPP = round((float)$credito->monto_original - $ahorroPP, 2);
+                @endphp
+                <div style="background: {{ $calificaPP ? 'var(--success-50)' : 'var(--neutral-50)' }}; border: 1px solid {{ $calificaPP ? 'var(--success-200)' : 'var(--neutral-200)' }}; border-radius: var(--radius-sm); padding: 1rem;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: {{ $calificaPP ? 'var(--success-800)' : 'var(--primary-700)' }}; text-transform: uppercase;">
+                        4. Descuento por Pronto Pago
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--neutral-600); margin-top: 0.2rem;">
+                        Término comercial: <strong>{{ $terminoPP }}</strong>
+                    </div>
+                    <div style="font-size: 0.9375rem; font-weight: 700; color: {{ $calificaPP ? 'var(--success-700)' : 'var(--neutral-700)' }}; margin-top: 0.5rem;">
+                        {{ $pctPP }}% de descuento (hasta {{ $fechaLimitePP->format('d/m/Y') }})
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--neutral-700); margin-top: 0.25rem;">
+                        @if($calificaPP)
+                            <span class="badge badge-success" style="font-size: 0.7rem;">¡Califica para pronto pago!</span><br>
+                            Paga <strong>${{ number_format($montoConPP, 2) }}</strong> (Ahorro de ${{ number_format($ahorroPP, 2) }})
+                        @else
+                            <span style="color: var(--neutral-500);">Plazo de descuento superado. Vence el total de ${{ number_format($credito->monto_original, 2) }} al día {{ $credito->plazo_dias }}.</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Las Cinco C del Crédito (+ Criterios Ampliados) --}}
+    @if(isset($evaluacionCincoC))
+    <div class="card mb-4" style="margin-top: 1.5rem;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 class="card-title">Evaluación de las Cinco C del Crédito</h3>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                    Análisis crediticio integral del cliente y garantías según el estándar de la clase.
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span class="badge badge-{{ $evaluacionCincoC['semaforo']['color'] }}" style="font-size: 0.875rem; font-weight: 800; padding: 0.4rem 0.8rem;">
+                    {{ $evaluacionCincoC['semaforo']['label'] }} ({{ $evaluacionCincoC['score_total'] }}/100)
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                @foreach($evaluacionCincoC['cinco_c'] as $cKey => $cItem)
+                    <div style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <span style="font-weight: 700; color: var(--neutral-900); font-size: 0.9375rem;">
+                                {{ $cItem['nombre'] }}
+                            </span>
+                            <span class="badge badge-{{ $cItem['score'] >= 75 ? 'success' : ($cItem['score'] >= 60 ? 'warning' : 'danger') }}" style="font-weight: 800;">
+                                {{ $cItem['score'] }} pts
+                            </span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--primary-700); font-weight: 600; margin-bottom: 0.35rem;">
+                            {{ $cItem['pregunta'] }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                            {{ $cItem['diagnostico'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Criterios Ampliados del Docente --}}
+            <div style="border-top: 1px solid var(--neutral-200); padding-top: 1rem;">
+                <div style="font-size: 0.8125rem; font-weight: 700; color: var(--neutral-700); margin-bottom: 0.75rem; text-transform: uppercase;">
+                    Criterios Ampliados del Docente:
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem;">
+                    @foreach($evaluacionCincoC['criterios_ampliados'] as $amp)
+                        <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 0.75rem;">
+                            <div style="font-weight: 700; font-size: 0.875rem; color: var(--neutral-900);">
+                                {{ $amp['nombre'] }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--neutral-500); margin-bottom: 0.35rem;">
+                                {{ $amp['descripcion'] }}
+                            </div>
+                            <div style="font-size: 0.8125rem; font-weight: 600; color: var(--primary-800);">
+                                {{ $amp['estado'] }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
         {{-- Plan de Cuotas --}}
         <div class="card" style="grid-column: span 2;">
             <div class="card-header">

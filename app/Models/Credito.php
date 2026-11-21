@@ -63,6 +63,10 @@ class Credito extends Model
         'motivo_aprobacion',
         'dui_verificado',
         'referencia_verificada',
+        'dias_pronto_pago',
+        'descuento_pronto_pago',
+        'fecha_limite_pronto_pago',
+        'termino_pago',
     ];
 
     protected $casts = [
@@ -82,6 +86,9 @@ class Credito extends Model
         'fecha_cancelacion' => 'date',
         'dui_verificado' => 'boolean',
         'referencia_verificada' => 'boolean',
+        'dias_pronto_pago' => 'integer',
+        'descuento_pronto_pago' => 'decimal:2',
+        'fecha_limite_pronto_pago' => 'date',
     ];
 
     // ─── Relaciones ──────────────────────────────────────────────────────
@@ -281,5 +288,53 @@ class Credito extends Model
         $seq = app(CorrelativoService::class)->siguiente($prefijo, $max);
 
         return sprintf('CC-%s-%06d', now()->format('Y'), $seq);
+    }
+
+    public function secuenciaCobranza()
+    {
+        return $this->hasOne(CobranzaSecuencia::class);
+    }
+
+    public function notificacionesCobro()
+    {
+        return $this->hasMany(CobranzaNotificacion::class)->orderByDesc('fecha_envio');
+    }
+
+    /**
+     * Indica si el crédito califica para descuento por pronto pago a una fecha dada.
+     */
+    public function aplicaProntoPago(?\Carbon\Carbon $fecha = null): bool
+    {
+        if (! $this->descuento_pronto_pago || (float) $this->descuento_pronto_pago <= 0) {
+            return false;
+        }
+
+        if (! $this->fecha_limite_pronto_pago) {
+            return false;
+        }
+
+        $fechaComparar = $fecha ? $fecha->copy()->startOfDay() : today();
+
+        return $fechaComparar->lte($this->fecha_limite_pronto_pago->copy()->endOfDay());
+    }
+
+    /**
+     * Retorna el monto de ahorro por pronto pago sobre el monto original.
+     */
+    public function montoAhorroProntoPago(): float
+    {
+        if (! $this->descuento_pronto_pago || (float) $this->descuento_pronto_pago <= 0) {
+            return 0.0;
+        }
+
+        return round((float) $this->monto_original * ((float) $this->descuento_pronto_pago / 100), 2);
+    }
+
+    /**
+     * Monto con descuento por pronto pago aplicado.
+     */
+    public function montoConProntoPago(): float
+    {
+        return max(0.0, round((float) $this->monto_original - $this->montoAhorroProntoPago(), 2));
     }
 }

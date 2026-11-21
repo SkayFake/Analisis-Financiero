@@ -285,6 +285,18 @@ class CreditoService
                     : null,
                 'dui_verificado' => ! $expedienteRequerido && ! empty($condiciones['dui_verificado']),
                 'referencia_verificada' => ! empty($condiciones['referencia_verificada']),
+                'dias_pronto_pago' => $condicion->dias_pronto_pago,
+                'descuento_pronto_pago' => $condicion->descuento_pronto_pago,
+                'fecha_limite_pronto_pago' => $condicion->dias_pronto_pago ? ($ventaLocked->fecha_emision ?? now())->copy()->addDays($condicion->dias_pronto_pago) : null,
+                'termino_pago' => $condicion->termino_pago ?? 'neto 30',
+            ]);
+
+            $credito->secuenciaCobranza()->create([
+                'cliente_id' => $credito->cliente_id,
+                'etapa_actual' => 'notificacion_escrita',
+                'fecha_ingreso_etapa' => now()->toDateString(),
+                'dias_mora_al_escalar' => 0,
+                'estado' => 'en_gestion',
             ]);
 
             // Guardar fiador si viene en los datos

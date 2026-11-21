@@ -98,6 +98,14 @@ class ClienteController extends Controller
         return view('clientes.show', compact('cliente'));
     }
 
+    public function auxiliar(Cliente $cliente)
+    {
+        Acceso::exigir('clientes.view');
+        $auxiliar = $cliente->obtenerAuxiliar();
+
+        return view('clientes.auxiliar', compact('cliente', 'auxiliar'));
+    }
+
     public function edit(Cliente $cliente)
     {
         Acceso::exigir('clientes.edit');

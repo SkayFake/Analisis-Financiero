@@ -22,6 +22,13 @@
             </div>
         </div>
         <div class="page-actions">
+            <a href="{{ route('clientes.auxiliar', $cliente) }}" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <span>Libro Auxiliar</span>
+            </a>
             @can('expedientes.view')<a class="btn btn-secondary" href="{{ route('expedientes.cliente', $cliente) }}">Expediente documental</a>@endcan
             <a href="{{ route('creditos.create', ['cliente_id' => $cliente->id]) }}" class="btn btn-success">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -191,6 +198,50 @@
                         {{ $cliente->cartera?->nombre ?? 'Cartera General' }}
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Evaluación de las Cinco C del Crédito (+ Criterios Ampliados) --}}
+    @php
+        $eval5C = app(\App\Services\EvaluacionCincoCService::class)->evaluar($cliente);
+    @endphp
+    <div class="card mb-4" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h3 class="card-title">Perfil Crediticio: Las Cinco C del Crédito</h3>
+                <p style="font-size: 0.8125rem; color: var(--neutral-500); margin-top: 0.2rem;">
+                    Evaluación de riesgo comercial según el modelo estándar de otorgamiento.
+                </p>
+            </div>
+            <span class="badge badge-{{ $eval5C['semaforo']['color'] }}" style="font-size: 0.875rem; font-weight: 800; padding: 0.35rem 0.75rem;">
+                {{ $eval5C['semaforo']['label'] }} ({{ $eval5C['score_total'] }}/100)
+            </span>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                @foreach($eval5C['cinco_c'] as $cItem)
+                    <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); padding: 0.875rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <span style="font-weight: 700; color: var(--neutral-900); font-size: 0.875rem;">{{ $cItem['nombre'] }}</span>
+                            <span class="badge badge-{{ $cItem['score'] >= 75 ? 'success' : ($cItem['score'] >= 60 ? 'warning' : 'danger') }}" style="font-weight: 800;">
+                                {{ $cItem['score'] }} pts
+                            </span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--neutral-600); line-height: 1.4;">
+                            {{ $cItem['diagnostico'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div style="border-top: 1px solid var(--neutral-200); padding-top: 0.75rem; display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.8125rem;">
+                @foreach($eval5C['criterios_ampliados'] as $amp)
+                    <div>
+                        <strong style="color: var(--neutral-700);">{{ $amp['nombre'] }}:</strong>
+                        <span style="color: var(--neutral-600);">{{ $amp['estado'] }}</span>
+                    </div>
+                @endforeach
             </div>
         </div>
     </div>

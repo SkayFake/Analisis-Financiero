@@ -179,11 +179,16 @@ class CreditoController extends Controller
             $credito->load(['cuentasIncobrables.declaradoPor', 'cuentasIncobrables.reactivadoPor']);
         }
 
+        $credito->load(['secuenciaCobranza.usuarioEscalado', 'notificacionesCobro.usuario']);
+
         $requisitosFaltantes = $credito->estado === 'pendiente_aprobacion'
             ? $this->creditoService->obtenerRequisitosFaltantes($credito)
             : [];
 
-        return view('creditos.show', compact('credito', 'requisitosFaltantes'));
+        $secuencia = app(\App\Services\CobranzaSecuenciaService::class)->obtenerOSincronizar($credito);
+        $evaluacionCincoC = app(\App\Services\EvaluacionCincoCService::class)->evaluar($credito->cliente, $credito);
+
+        return view('creditos.show', compact('credito', 'requisitosFaltantes', 'secuencia', 'evaluacionCincoC'));
     }
 
     /**

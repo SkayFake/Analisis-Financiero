@@ -31,6 +31,9 @@ class CondicionCredito extends Model
         'compras_minimas_cliente_frecuente',
         'requiere_fiador',
         'requiere_dui',
+        'dias_pronto_pago',
+        'descuento_pronto_pago',
+        'termino_pago',
     ];
 
     protected $casts = [
@@ -40,6 +43,8 @@ class CondicionCredito extends Model
         'tasa_interes_anual'                  => 'decimal:4',
         'tasa_mora_mensual'                   => 'decimal:4',
         'monto_auto_aprobado'                 => 'decimal:2',
+        'dias_pronto_pago'                    => 'integer',
+        'descuento_pronto_pago'               => 'decimal:2',
     ];
 
     // ─── Relaciones ──────────────────────────────────────────────────────
